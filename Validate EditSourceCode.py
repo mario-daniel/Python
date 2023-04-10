@@ -1,4 +1,3 @@
-
 def EditSourceCode(SourceCode): 
   LineNumber = int(input("Enter line number of code to edit: "))
   print(SourceCode[LineNumber])
