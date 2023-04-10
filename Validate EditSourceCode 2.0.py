@@ -10,14 +10,14 @@ def EditSourceCode(SourceCode):
       Choice = input("Enter your choice: ")
       Choice = Choice.upper()
     if Choice == "E":
-      NewLabel = input("Input a new LABEL (input enter if no label): ")
+      NewLabel = input("Input a new LABEL (input NOTHING if no label): ")
       NewLabel = NewLabel.replace(" ", EMPTY_STRING)
       if NewLabel != EMPTY_STRING:
         if ":" not in NewLabel:
           NewLabel = NewLabel + ":"
-      NewOpcode = input("Input a new OPCODE (input enter if no opcode): ")
+      NewOpcode = input("Input a new OPCODE (input NOTHING if no opcode): ")
       NewOpcode = NewOpcode.replace(" ", EMPTY_STRING)
-      NewOperand = input("Input a new OPERAND (input enter if no operand): ")
+      NewOperand = input("Input a new OPERAND (input NOTHING if no operand): ")
       NewOperand = NewOperand.replace(" ", EMPTY_STRING)
       Line = EMPTY_STRING
       while len(NewLabel) != 6:
