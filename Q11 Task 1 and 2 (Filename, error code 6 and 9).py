@@ -25,7 +25,6 @@ def LoadFile(SourceCode):
 
 
 
-
 def AssemblerSimulator():
   SourceCode = [EMPTY_STRING for Lines in range(HI_MEM)]
   Memory = [AssemblerInstruction() for Lines in range(HI_MEM)]
