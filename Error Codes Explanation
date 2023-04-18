@@ -1,0 +1,11 @@
+Error Code 1 - The user has input to load a file that does not exist.
+Error Code 2 - The file has more than 20 lines. The file has been shortened to 20 lines.
+Error Code 3 - An instance of a label has been defined twice in the program file.
+Error Code 4 - A label in the program loaded is not correctly formatted.
+Error Code 5 - An opcode in the program does not exist as part of the OpCodeValues Array.
+Error Code 6 - An operand in the program is not a label that exists.
+Error Code 7 - The user has tried to display the source code without loading one first.
+Error Code 8 - The user has tried to edit the source code without loading one first.
+Error Code 9 - The user has tried to assemble the program without loading one first.
+Error Code 10 - The user has tried to run the program without loading one first.
+Error Code 11 - An error occured in the program.
