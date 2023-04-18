@@ -52,7 +52,7 @@ def AssemblerSimulator():
         Memory = ResetMemory(Memory)
     elif MenuOption == 'A':
       if SourceCode[0] == EMPTY_STRING:
-        print("Error Code 9 - The Source Code is empty due to a file not loading correctly.")
+        print("Error Code 9 - The user has tried to assemble the program without loading one first.")
       else:
         Memory = Assemble(SourceCode, Memory)
     elif MenuOption == 'R':
