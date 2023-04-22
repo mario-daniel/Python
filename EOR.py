@@ -12,4 +12,6 @@ def ExecuteEOR(Memory, Registers, Address):
     else:
       Result = Result + "0"
   Registers[ACC] = ConvertToDecimal(Result)
+  if Registers[STATUS] == ConvertToDecimal("001"):
+    ReportRunTimeError("Overflow", Registers)
   return Registers
