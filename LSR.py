@@ -1,6 +1,7 @@
-def ExecuteLSR(Registers):
+def ExecuteLSR(Memory, Registers, Address):
   Binary = ConvertToBinary(Registers[ACC])
-  Shifted = Binary[:-1]
-  Shifted = "0" + Binary
-  Registers[ACC] = ConvertToDecimal(Shifted)
+  Binary = Binary[:-(Memory[Address].OperandValue)]
+  Registers[ACC] = ConvertToDecimal(Binary)
+  if Registers[STATUS] == ConvertToDecimal("001"):
+    ReportRunTimeError("Overflow", Registers)
   return Registers
