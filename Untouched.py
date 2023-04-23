@@ -1,3 +1,11 @@
+# Skeleton Program for the AQA AS Summer 2023 examination
+# this code should be used in conjunction with the Preliminary Material
+# written by the AQA Programmer Team
+# developed in a Python 3 environment
+
+# Version number: 0.0.0
+
+
 EMPTY_STRING = ""
 HI_MEM = 20
 MAX_INT = 127 # 8 bits available for operand (two's complement integer)
