@@ -6,7 +6,7 @@ def ExecuteAND(Memory, Registers, Address):
     BinaryACC = '0' + BinaryACC
   while len(BinaryOperand) < 7:
     BinaryOperand = '0' + BinaryOperand
-  for Bit in range(len(BinaryACC)):
+  for Bit in range(7):
     if BinaryACC[Bit] == '1' and BinaryOperand[Bit] == '1':
       Final = Final + "1"
     else:
