@@ -1,4 +1,4 @@
-def ExecuteAND(Memory, Registers, Address):
+def ExecuteORR(Memory, Registers, Address):
   BinaryACC = ConvertToBinary(Registers[ACC])
   BinaryOperand = ConvertToBinary(Memory[Address].OperandValue)
   Final = EMPTY_STRING
