@@ -1,5 +1,5 @@
 def ExecuteLSR(Memory, Registers, Address):
-  Binary = ConvertToBinary(Registers[ACC])
-  Binary = Binary[:-(Memory[Address].OperandValue)]
-  Registers[ACC] = ConvertToDecimal(Binary)
+  Value = ConvertToBinary(Registers[ACC])
+  Value = Value[:-(Memory[Address].OperandValue)]
+  Registers[ACC] = ConvertToDecimal(Value)
   return Registers
