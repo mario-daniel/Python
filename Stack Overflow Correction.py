@@ -1,21 +1,13 @@
-#------------------------------------------------------------#
 def DisplayStack(Stack):
-#------------------------------------------------------------#
   print("Stack contents:")
   print(" ----")
-#------------------------------------------------------------#
   for Index in reversed(Stack):
     print("|{:>3d} |".format(Index))
-#------------------------------------------------------------#
   print(" ----")
 
-#------------------------------------------------------------#
 def ExecuteJSR(Memory, Registers, Address, Stack):
-#------------------------------------------------------------#
   StackPointer = Registers[TOS] - 1
-#------------------------------------------------------------#
   Stack.append(Registers[PC])
-#------------------------------------------------------------#
   Registers[PC] = Address 
   Registers[TOS] = StackPointer
   DisplayStack(Stack)
@@ -29,10 +21,8 @@ def ExecuteRTN(Registers, Stack, Index):
  
 def Execute(SourceCode, Memory): 
   Registers = [0, 0, 0, 0, 0]
-#------------------------------------------------------------#
   Stack = []
   Index = -1
-#------------------------------------------------------------#
   Registers = SetFlags(Registers[ACC], Registers)
   Registers[PC] = 0 
   Registers[TOS] = HI_MEM
@@ -68,9 +58,7 @@ def Execute(SourceCode, Memory):
     elif OpCode == "SKP":
       ExecuteSKP()
     elif OpCode == "RTN":
-#------------------------------------------------------------#
       Registers, Index = ExecuteRTN(Registers, Stack, Index)
-#------------------------------------------------------------#
     if Registers[ERR] == 0:
       OpCode = Memory[Registers[PC]].OpCode    
       DisplayCurrentState(SourceCode, Memory, Registers)
