@@ -10,7 +10,7 @@ def EditSourceCode(SourceCode):
             print("S - Save file")
             Choice = input("Enter your choice: ")
         if Choice == "E":
-            SourceCode[LineNumber] = input("Enter the new line: ")
+            SourceCode[LineNumber] = NewLineEdit(SourceCode, LineNumber)
         elif Choice == "S":
             FileName = input("Enter new filename: ")
             FileIn = open(FileName + ".txt", "a")
