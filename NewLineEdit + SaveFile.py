@@ -17,14 +17,12 @@ def EditSourceCode(SourceCode):
     return SourceCode
 
 def SaveFile(SourceCode):
-    name = str(input(f"Enter file name: "))
-    with open(f"{name}.txt", "x") as fp:
-        for x, y in enumerate(SourceCode):
-            if y != EMPTY_STRING:
-                if x != 0:
-                    fp.writelines(f"{y}\n")
+    FileName = input("Enter new filename: ")
+    FileIn = open(FileName + ".txt", "a")
+    for i in range(1,int(SourceCode[0]) + 1):
+        FileIn.write(str(SourceCode[i])+"\n")
 
-  def NewLineEdit(SourceCode, LineNumber):
+def NewLineEdit(SourceCode, LineNumber):
   Line = SourceCode[LineNumber]
   Label = input("Enter Label or press enter: ").replace(" ", EMPTY_STRING)
   OpCode = input("Enter OpCode or press enter: ").replace(" ", EMPTY_STRING)
@@ -32,11 +30,11 @@ def SaveFile(SourceCode):
   Comment = input("Enter Comment or press enter: ").strip()
   if "*" not in Comment and Comment != EMPTY_STRING:
     Comment = "*" + Comment
-  while len(Label) != 6 and Label != EMPTY_STRING:
+  while len(Label) != 6:
     Label = " " + Label
-  while len(OpCode) != 4 and OpCode != EMPTY_STRING:
-    OpCode = " " + OpCode
-  if (Label and OpCode and Operand and Comment) == EMPTY_STRING:
+  while len(OpCode) != 4:
+    OpCode = OpCode + " "
+  if Label == EMPTY_STRING and OpCode == EMPTY_STRING and Operand == EMPTY_STRING and Comment == EMPTY_STRING:
     print("\nThere will be no changes made to the Source Code.\n")
   else:
     Line = Label + " " + OpCode + " " + Operand + " " + Comment
