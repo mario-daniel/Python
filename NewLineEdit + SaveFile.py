@@ -12,12 +12,17 @@ def EditSourceCode(SourceCode):
         if Choice == "E":
             SourceCode[LineNumber] = NewLineEdit(SourceCode, LineNumber)
         elif Choice == "S":
-            FileName = input("Enter new filename: ")
-            FileIn = open(FileName + ".txt", "a")
-            for i in range(1,int(SourceCode[0]) + 1):                                        
-                FileIn.write(str(SourceCode[i])+"\n")
+            SaveFile(SourceCode)
         DisplaySourceCode(SourceCode)
     return SourceCode
+
+def SaveFile(SourceCode):
+    name = str(input(f"Enter file name: "))
+    with open(f"{name}.txt", "x") as fp:
+        for x, y in enumerate(SourceCode):
+            if y != EMPTY_STRING:
+                if x != 0:
+                    fp.writelines(f"{y}\n")
 
   def NewLineEdit(SourceCode, LineNumber):
   Line = SourceCode[LineNumber]
