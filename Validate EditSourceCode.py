@@ -8,9 +8,12 @@ def EditSourceCode(SourceCode):
       print("E - Edit this line")
       print("C - Cancel edit")
       Choice = input("Enter your choice: ")
-      Choice = Choice.upper()
     if Choice == "E":
-      SourceCode[LineNumber] = input("Enter the new line: ")
+      SourceCode[LineNumber] = ValidateSourceCode(SourceCode, LineNumber)
+    DisplaySourceCode(SourceCode)
+  return SourceCode
+
+def ValidateSourceCode():
       Line = SourceCode[LineNumber].replace(" ", EMPTY_STRING)
       IsSymbol = False
       for char in Line:
@@ -39,6 +42,4 @@ def EditSourceCode(SourceCode):
         while len(NewOpcode)!= 10:
           NewOpcode = " " + NewOpcode
         Line = Line.replace(Line[0:3], NewOpcode)
-      SourceCode[LineNumber] = Line
-    DisplaySourceCode(SourceCode)
-  return SourceCode
+      return Line
