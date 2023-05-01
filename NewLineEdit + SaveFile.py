@@ -30,10 +30,12 @@ def NewLineEdit(SourceCode, LineNumber):
   Comment = input("Enter Comment or press enter: ").strip()
   if "*" not in Comment and Comment != EMPTY_STRING:
     Comment = "*" + Comment
+  elif ":" not in Label and Label != EMPTY_STRING:
+    Comment += ":"
   while len(Label) != 6:
     Label = " " + Label
   while len(OpCode) != 4:
-    OpCode = OpCode + " "
+    OpCode += " "
   if Label == EMPTY_STRING and OpCode == EMPTY_STRING and Operand == EMPTY_STRING and Comment == EMPTY_STRING:
     print("\nThere will be no changes made to the Source Code.\n")
   else:
