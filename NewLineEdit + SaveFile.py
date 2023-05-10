@@ -22,7 +22,8 @@ def SaveFile(SourceCode):
     for i in range(1,int(SourceCode[0]) + 1):
         FileIn.write(str(SourceCode[i])+"\n")
 
-def NewLineEdit():
+def NewLineEdit(SourceCode, LineNumber):
+  Line = SourceCode[LineNumber]
   Label = input("Enter Label or press enter: ").replace(" ", EMPTY_STRING)
   OpCode = input("Enter OpCode or press enter: ").replace(" ", EMPTY_STRING)
   Operand = input("Enter Operand or press enter: ").replace(" ", EMPTY_STRING)
