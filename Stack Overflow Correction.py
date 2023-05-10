@@ -15,14 +15,13 @@ def ExecuteJSR(Memory, Registers, Address, Stack):
 
 def ExecuteRTN(Registers, Stack, Index): 
   Registers[TOS] += 1
-  Registers[PC] = Stack[Index]
-  Index -= 1
+  Registers[PC] = Stack[-1]
+  Stack.pop(-1)
   return Registers, Index
  
 def Execute(SourceCode, Memory): 
   Registers = [0, 0, 0, 0, 0]
   Stack = []
-  Index = -1
   Registers = SetFlags(Registers[ACC], Registers)
   Registers[PC] = 0 
   Registers[TOS] = HI_MEM
