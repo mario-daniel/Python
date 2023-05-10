@@ -18,7 +18,7 @@ def EditSourceCode(SourceCode):
 
 def SaveFile(SourceCode):
     FileName = input("Enter new filename: ")
-    FileIn = open(FileName + ".txt", "a")
+    FileIn = open(FileName + ".txt", "w")
     for i in range(1,int(SourceCode[0]) + 1):
         FileIn.write(str(SourceCode[i])+"\n")
 
