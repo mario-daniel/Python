@@ -31,13 +31,13 @@ def NewLineEdit(SourceCode, LineNumber):
   if Label == EMPTY_STRING and OpCode == EMPTY_STRING and Operand == EMPTY_STRING and Comment == EMPTY_STRING:
     print("\nThere will be no changes made to the Source Code.\n")
   else:
-    if "*" not in Comment:
-      Comment = "*" + Comment
-    elif ":" not in Label:
+   if ":" not in Label and Label != EMPTY_STRING:
+      Label += ":"
+   elif "*" not in Comment and Comment != EMPTY_STRING:
       Comment += ":"
-    while len(Label) != 6:
+   while len(Label) != 6:
       Label = " " + Label
-    while len(OpCode) != 4:
+   while len(OpCode) != 4:
       OpCode += " "
-    Line = Label + " " + OpCode + " " + Operand + " " + Comment
+   Line = Label + " " + OpCode + " " + Operand + " " + Comment
   return Line
