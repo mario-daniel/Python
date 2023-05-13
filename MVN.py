@@ -1,3 +1,5 @@
+#This is a NOT gate done manually without the "~" operator.
+
 def ExecuteMVN(Registers):
   BinaryACC = ConvertToBinary(Registers[ACC])
   Result = EMPTY_STRING
