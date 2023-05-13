@@ -1,3 +1,5 @@
+#This detects when the stakc overflow occurs and stops the program accordingly.
+
 def ExecuteJSR(Memory, Registers, Address, SourceCode):
   StackPointer = Registers[TOS] - 1
   if StackPointer <= int(SourceCode[0]):
