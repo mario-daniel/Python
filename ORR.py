@@ -1,3 +1,5 @@
+#This is an OR gate done manually without the "|" operator.
+
 def ExecuteORR(Memory, Registers, Address):
   BinaryACC = ConvertToBinary(Registers[ACC])
   BinaryOperand = ConvertToBinary(Memory[Address].OperandValue)
