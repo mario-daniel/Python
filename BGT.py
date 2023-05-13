@@ -1,3 +1,5 @@
+#Checks if the operand is greater than the value in the accumulator.
+
 def ExecuteBGT(Registers, Address):
     StatusRegister = ConvertToBinary(Registers[STATUS])
     FlagN = StatusRegister[1]
