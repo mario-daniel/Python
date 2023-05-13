@@ -1,3 +1,5 @@
+#This is an AND gate done manually without the "&" operator.
+
 def ExecuteAND(Memory, Registers, Address):
   BinaryACC = ConvertToBinary(Registers[ACC])
   BinaryOperand = ConvertToBinary(Memory[Address].OperandValue)
