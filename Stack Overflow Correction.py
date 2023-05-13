@@ -1,3 +1,5 @@
+#This fixes the stack overflow in prog3 to work as intended. This is done by creating a new attribute to every object.
+
 def DisplayStack(Stack):
   print("Stack contents:")
   print(" ----")
