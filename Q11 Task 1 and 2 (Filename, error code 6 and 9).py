@@ -1,3 +1,5 @@
+#This shows the user that the program loaded the file correctly.
+
 def LoadFile(SourceCode): 
   FileExists = False
   SourceCode = ResetSourceCode(SourceCode)
@@ -38,7 +40,7 @@ def AssemblerSimulator():
       FileName = EMPTY_STRING
       SourceCode, FileName = LoadFile(SourceCode)
       Memory = ResetMemory(Memory)
-      print(FileName, "has been assembled succesfully.")
+      print(FileName, "has been loaded succesfully.")
     elif MenuOption == 'D':
       if SourceCode[0] == EMPTY_STRING:
         print("Error Code 7")
