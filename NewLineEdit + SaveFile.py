@@ -1,3 +1,6 @@
+#This is a validate source code that implements the user's new line they've inputted to the write format of the program. This program also implements a save file function which saves
+#the new source code to either the same prog file loaded or create a new one.
+
 def EditSourceCode(SourceCode):
     LineNumber = int(input("Enter line number of code to edit: "))
     print(SourceCode[LineNumber])
