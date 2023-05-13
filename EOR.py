@@ -1,3 +1,5 @@
+#This is an XOR gate done manually without the "^" operator.
+
 def ExecuteEOR(Memory, Registers, Address):
   BinaryACC = ConvertToBinary(Registers[ACC])
   BinaryOperand = ConvertToBinary(Memory[Address].OperandValue)
