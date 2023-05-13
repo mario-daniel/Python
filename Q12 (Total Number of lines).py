@@ -1,3 +1,5 @@
+#This prevents the user from editing the total number of lines of the source code.
+
 def EditSourceCode(SourceCode): 
   LineNumber = int(input("Enter line number of code to edit: "))
   while LineNumber == 0:
