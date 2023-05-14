@@ -37,7 +37,7 @@ def NewLineEdit(SourceCode, LineNumber):
    if ":" not in Label and Label != EMPTY_STRING:
       Label += ":"
    elif "*" not in Comment and Comment != EMPTY_STRING:
-      Comment += ":"
+      Comment = "*" + Comment
    while len(Label) != 6:
       Label = " " + Label
    while len(OpCode) != 4:
