@@ -1,9 +1,9 @@
 import sqlite3
 
-conn = sqlite3.connect("rfid")
+conn = sqlite3.connect('rfid')
 cursor = conn.cursor()
 
-class Student:
+class Student:   
     def __init__(self, student_id, password, first_name, last_name, grade_class, approval = ''):
         self.student_id = student_id
         self.password = password
@@ -11,6 +11,20 @@ class Student:
         self.last_name = last_name
         self.grade_class = grade_class
         self.approval = approval
+
+    def register(self):
+        cursor.execute('''INSERT INTO Student (
+                    student_id, 
+                    password, 
+                    first_name, 
+                    last_name, 
+                    class) VALUES (?, ?, ?, ?, ?)''', (
+                     self.student_id, 
+                     self.password, 
+                     self.first_name, 
+                     self.last_name, 
+                     self.grade_class))
+        conn.commit()
 
 class Teacher:
     def __init__(self, teacher_id, password, first_name, last_name, facility,):
@@ -20,41 +34,63 @@ class Teacher:
         self.last_name = last_name
         self.facility = facility
 
-def Menu():
-    choice = input('Would you like to register(1) or login(2): ')
-    while True:
-        if choice == '1':
-            student = register()
-            break
-        elif choice == '2':
-            break
-        else:
-            choice = input('Please input a valid choice, (1) to register or (2) to login: ')
-            continue
-    return student
-
-def register():
-    student_id = int(input("Enter student ID: "))
-    password = input('Enter a password: ')
-    first_name = input("Enter first name: ")
-    last_name = input("Enter last name: ")
-    grade_class = input("Enter your grade and class: ")
-    #Create student object
-    student = Student(student_id, password, first_name, last_name, grade_class)
-    #Create a new record for the student on database
-    cursor.execute('''INSERT INTO Student (
+    def register(self):
+        #This inputs the new student's data into the database.
+        cursor.execute('''INSERT INTO Student (
                     student_id, 
                     password, 
                     first_name, 
                     last_name, 
                     class) VALUES (?, ?, ?, ?, ?)''', (
-                    student_id, 
-                    password, 
-                    first_name, 
-                    last_name, 
-                    grade_class))
-    conn.commit()
-    return student
+                     self.teacher_id, 
+                     self.password, 
+                     self.first_name, 
+                     self.last_name, 
+                     self.facility))
+        conn.commit()    
+
+def Menu():
+    choice_1 = input("Are you a teacher (t) or student (s): ")
+    choice_2 = input('Would you like to register(r) or login(l): ')
+    if choice_1 == 's':
+        if choice_2 == 'r':
+            student_id, password, first_name, last_name, grade_class = register(choice_1)
+            student = Student(student_id, password, first_name, last_name, grade_class)
+            student.register()
+        elif choice_2 == 'l':
+            student_id, password = login(choice_1)
+    elif choice_2 == 't':
+        if choice_2 == 'r':
+            teacher_id, password, first_name, last_name, facility = register(choice_1)
+            teacher = Teacher(teacher_id, password, first_name, last_name, facility)
+            teacher.register()
+
+def login(choice_1):
+    if choice_1 == 's':
+        student_id = int(input('Enter student ID: '))
+        password = input('Enter password: ')
+        cursor.execute('SELECT password FROM Student WHERE student_id = ?', (student_id))
+        return student_id, password
+    elif choice_1 == 't':
+        teacher_id = int(input("Enter teacher ID: "))
+        password = input('Enter password: ')
+        return teacher_id, password
+
+def register(choice_1):
+    if choice_1 == 's':
+        student_id = int(input("Enter student ID: "))
+        password = input('Enter a password: ')
+        first_name = input("Enter first name: ")
+        last_name = input("Enter last name: ")
+        grade_class = input("Enter your grade and class: ")
+        return student_id, password, first_name, last_name, grade_class
+    elif choice_1 == 't':
+        teacher_id = int(input("Enter teacher ID: "))
+        password = input('Enter a password: ')
+        first_name = input("Enter first name: ")
+        last_name = input("Enter last name: ")
+        facility = input("What facility are you responsible for?: ")
+        return teacher_id, password, first_name, last_name, facility
 
 def main():
     Menu()
