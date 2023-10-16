@@ -69,11 +69,22 @@ def login(choice_1):
     if choice_1 == 's':
         student_id = int(input('Enter student ID: '))
         password = input('Enter password: ')
-        cursor.execute('SELECT password FROM Student WHERE student_id = ?', (student_id))
+        cursor.execute('SELECT password FROM Student WHERE student_id = ?', (student_id,))
+        password_2 = cursor.fetchall()
+        if password == password_2[0][0]:
+            print('Yes!')
+        else:
+            print('No')
         return student_id, password
     elif choice_1 == 't':
         teacher_id = int(input("Enter teacher ID: "))
         password = input('Enter password: ')
+        cursor.execute('SELECT password FROM Teacher WHERE teacher_id = ?', (teacher_id,))
+        password_2 = cursor.fetchall()
+        if password == password_2[0][0]:
+            print('Yes!')
+        else:
+            print('No')
         return teacher_id, password
 
 def register(choice_1):
