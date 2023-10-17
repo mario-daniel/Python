@@ -46,12 +46,10 @@ class Login_Main_Screen:
         self.teacher_button = ttk.Button(self.frame_teacher, text = 'Login', command = self.login)
         self.teacher_button.pack()
 
-        self.student_register = ttk.Button(self.frame_student, text = "Don't have an account? Register Here!", command = self.login)
+        self.student_register = ttk.Button(self.frame_student, text = "Don't have an account? Register Here!", command = self.next_page)
         self.student_register.pack()
-        self.teacher_register = ttk.Button(self.frame_teacher, text = "Don't have an account? Register Here!", command = self.login)
+        self.teacher_register = ttk.Button(self.frame_teacher, text = "Don't have an account? Register Here!", command = self.next_page)
         self.teacher_register.pack()
-        if self.student_register or self.teacher_register:
-            register = Register_Screen(window, self.student_register, self.teacher_register)
 
         #Grid
         self.main_frame.columnconfigure(0, weight = 1)
@@ -59,6 +57,13 @@ class Login_Main_Screen:
         self.main_frame.rowconfigure(0, weight = 1)
         self.frame_student.grid(row = 0, column = 0)
         self.frame_teacher.grid(row = 0, column = 1)
+
+    def next_page(self):
+        self.main_frame.pack_forget()
+        if self.student_register:
+            Register_Screen(window, self.student_register)
+        elif self.student_register:
+            Register_Screen(window, self.teacher_register)
 
     def login(self):
         if self.student_button:
@@ -87,12 +92,9 @@ class Login_Main_Screen:
                 messagebox.showinfo('Login Successful', f'Welcome, {name[0][0]} {name[0][1]}')
             else:
                 messagebox.showerror("Login Failed", "Incorrect username or password")
-            
 
 class Register_Screen:
-    def __init__(self, window, student_register, teacher_register):
-        self.student_register = student_register
-        self.teacher_register = teacher_register
+    def __init__(self, window, student_register = False, teacher_register = False):
 
         #Vairables
         self.student_id = tk.StringVar()
@@ -112,7 +114,7 @@ class Register_Screen:
         self.main_frame.pack(expand = True, fill = 'both')
 
         #Widgets
-        if self.student_register:
+        if student_register:
             self.student_id_label = ttk.Label(self.main_frame, text = 'Enter Student ID')
             self.student_id_label.pack()
             self.student_id_entry = ttk.Entry(self.main_frame, textvariable = self.student_id)
@@ -130,9 +132,12 @@ class Register_Screen:
             self.student_last_name_entry = ttk.Entry(self.main_frame, textvariable = self.student_last_name)
             self.student_last_name_entry.pack()
             self.student_grade_class_label = ttk.Label(self.main_frame, text = 'Enter Class')
+            self.student_grade_class_label.pack()
             self.student_grade_class_entry = ttk.Entry(self.main_frame, textvariable = self.grade_class)
+            self.student_grade_class_entry.pack()
             self.student_submit = ttk.Button(self.main_frame, text = 'Register', command = self.register)
-        elif self.teacher_register:
+            self.student_submit.pack()
+        elif teacher_register:
             self.teacher_id_label = ttk.Label(self.main_frame, text = 'Enter Teacher ID')
             self.teacher_id_label.pack()
             self.teacher_id_entry = ttk.Entry(self.main_frame, textvariable = self.teacher_id)
@@ -149,9 +154,12 @@ class Register_Screen:
             self.teacher_last_name_label.pack()
             self.teacher_last_name_entry = ttk.Entry(self.main_frame, textvariable = self.teacher_last_name)
             self.teacher_last_name_entry.pack()
-            self.teacher_facility_label = ttk.Label(self.main_frame, text = 'Enter Class')
+            self.teacher_facility_label = ttk.Label(self.main_frame, text = 'Enter Facility')
+            self.teacher_facility_label.pack()
             self.teacher_facility_entry = ttk.Entry(self.main_frame, textvariable = self.facility)
+            self.teacher_facility_entry.pack()
             self.teacher_submit = ttk.button(self.main_frame, text = 'Register', command = self.register)
+            self.teacher_submit.pack()
 
     def register(self):
         if self.student_register:
