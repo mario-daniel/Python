@@ -7,188 +7,142 @@ cursor = conn.cursor()
 
 window = tk.Tk()
 window.title('RFID System')
-window.geometry('400x200')
+window.geometry('864x576')
 
-class Login_Main_Screen:
-    def __init__(self, window):
-        #Vairables
-        self.student_id = tk.StringVar()
-        self.student_password = tk.StringVar()
-        self.teacher_id = tk.StringVar()
-        self.teacher_password = tk.StringVar()
+class User:
+    def __init__(self, first_name = '', last_name = '', user_id = '', password = ''):
+        self.first_name = first_name
+        self.last_name = last_name
+        self.user_id = user_id
+        self.password = password
 
-        # Frames
-        self.main_frame = ttk.Frame(window, width = 400, height = 200)
-        self.main_frame.pack(expand = True, fill = 'both')
-        self.frame_student = ttk.Frame(self.main_frame, borderwidth = 10, relief = tk.GROOVE)
-        self.frame_teacher = ttk.Frame(self.main_frame, borderwidth = 10, relief = tk.GROOVE)
+class Student(User):
+    def __init__(self, first_name = '', last_name = '', user_id = '', password = '', grade = ''):
+        super().__init__(first_name, last_name, user_id, password)
+        self.grade = grade
 
-        #Widgets
-        self.student_id_label = ttk.Label(self.frame_student, text = 'Student ID')
-        self.student_id_label.pack()
-        self.student_id_entry = ttk.Entry(self.frame_student, textvariable = self.student_id)
-        self.student_id_entry.pack()
-        self.student_password_label = ttk.Label(self.frame_student, text = 'Password')
-        self.student_password_label.pack()
-        self.student_password_entry = ttk.Entry(self.frame_student, textvariable = self.student_password, show = '*')
-        self.student_password_entry.pack()
-        self.student_button = ttk.Button(self.frame_student, text = 'Login', command = self.login)
-        self.student_button.pack()
+class Teacher(User):
+    def __init__(self, first_name = '', last_name = '', user_id = '', password = '', facility = 0):
+        super().__init__(first_name, last_name, user_id, password)
+        self.facility = facility
 
-        self.teacher_id_label = ttk.Label(self.frame_teacher, text = 'Teacher ID')
-        self.teacher_id_label.pack()
-        self.teacher_id_entry = ttk.Entry(self.frame_teacher, textvariable = self.teacher_id)
-        self.teacher_id_entry.pack()
-        self.teacher_password_label = ttk.Label(self.frame_teacher, text = 'Password')
-        self.teacher_password_label.pack()
-        self.teacher_password_entry = ttk.Entry(self.frame_teacher, textvariable = self.teacher_password, show = '*')
-        self.teacher_password_entry.pack()
-        self.teacher_button = ttk.Button(self.frame_teacher, text = 'Login', command = self.login)
-        self.teacher_button.pack()
+class Card:
+    def __init__(self, card_id = 0):
+        self.card_id = card_id
 
-        self.student_register = ttk.Button(self.frame_student, text = "Don't have an account? Register Here!", command = self.next_page)
-        self.student_register.pack()
-        self.teacher_register = ttk.Button(self.frame_teacher, text = "Don't have an account? Register Here!", command = self.next_page)
-        self.teacher_register.pack()
+def remove_widgets():
+    for widget in window.winfo_children():
+        widget.destroy()
 
-        #Grid
-        self.main_frame.columnconfigure(0, weight = 1)
-        self.main_frame.columnconfigure(1, weight = 1)
-        self.main_frame.rowconfigure(0, weight = 1)
-        self.frame_student.grid(row = 0, column = 0)
-        self.frame_teacher.grid(row = 0, column = 1)
-
-    def next_page(self):
-        self.main_frame.pack_forget()
-        if self.student_register:
-            Register_Screen(window, self.student_register)
-        elif self.student_register:
-            Register_Screen(window, self.teacher_register)
-
-    def login(self):
-        if self.student_button:
-            cursor.execute('SELECT password FROM Student WHERE student_id = ?', (self.student_id.get(),))
-            password_db = cursor.fetchall()
-            cursor.execute('SELECT student_id FROM Student WHERE student_id = ?', (self.student_id.get(),))
-            student_id_db = cursor.fetchall()
-            if student_id_db == [] or password_db == []:
-                messagebox.showerror("Login Failed", "User does not exist")
-            elif self.student_password.get() == password_db[0][0]:
-                cursor.execute('SELECT first_name, last_name FROM Student WHERE student_id = ?', (self.student_id.get(),))
-                name = cursor.fetchall()
-                messagebox.showinfo('Login Successful', f'Welcome, {name[0][0]} {name[0][1]}')
+def login_page():
+    def login(Id, password):
+        cursor.execute('SELECT password FROM User WHERE user_id = ?', (Id.get(),))
+        password_db = cursor.fetchall()
+        cursor.execute('SELECT user_id FROM User WHERE user_id = ?', (Id.get(),))
+        Id_db = cursor.fetchall()
+        if Id_db == [] or password_db == []:
+            messagebox.showerror("Login Failed", "User does not exist")
+        elif password.get() == password_db[0][0]:
+            cursor.execute('SELECT first_name, last_name FROM User WHERE user_id = ?', (Id.get(),))
+            name = cursor.fetchall()
+            messagebox.showinfo('Login Successful', f'Welcome, {name[0][0]} {name[0][1]}')
+            if Id_db[0][0][0] == 'S':
+                cursor.execute('SELECT class_grade FROM User WHERE user_id = ?', (Id.get(),))
+                grade = cursor.fetchall()
+                user = Student(name[0][0], name[0][1], Id_db[0][0], password_db[0][0], grade[0][0])
             else:
-                messagebox.showerror("Login Failed", "Incorrect username or password")
-        elif self.teacher_button:
-            cursor.execute('SELECT password FROM Teacher WHERE teacher_id = ?', (self.teacher_id.get(),))
-            password_db = cursor.fetchall()
-            cursor.execute('SELECT teacher_id FROM Teacher WHERE teacher_id = ?', (self.teacher_id.get(),))
-            teacher_id_db = cursor.fetchall()
-            if teacher_id_db == [] or password_db == []:
-                messagebox.showerror("Login Failed", "User does not exist")
-            elif self.teacher_password.get() == password_db[0][0]:
-                cursor.execute('SELECT first_name, last_name FROM Teacher WHERE teacher_id = ?', (self.teacher_id.get(),))
-                name = cursor.fetchall()
-                messagebox.showinfo('Login Successful', f'Welcome, {name[0][0]} {name[0][1]}')
-            else:
-                messagebox.showerror("Login Failed", "Incorrect username or password")
+                cursor.execute('SELECT facility FROM User WHERE user_id = ?', (Id.get(),))
+                facility = cursor.fetchall()
+                user = Teacher(name[0][0], name[0][1], Id_db[0][0], password_db[0][0], facility[0][0])
+        else:
+            messagebox.showerror("Login Failed", "Incorrect username or password")
 
-class Register_Screen:
-    def __init__(self, window, student_register = False, teacher_register = False):
+    #Vairables
+    Id = tk.StringVar()
+    password = tk.StringVar()
 
-        #Vairables
-        self.student_id = tk.StringVar()
-        self.student_password = tk.StringVar()
-        self.student_first_name = tk.StringVar()
-        self.student_last_name = tk.StringVar()
-        self.grade_class = tk.StringVar()
+    # main_frames
+    main_frame = ttk.Frame(window, width = 864, height = 576)
+    main_frame.pack(expand = True, fill = 'both')
+    main_frame_login = ttk.Frame(main_frame)
 
-        self.teacher_id = tk.StringVar()
-        self.teacher_password = tk.StringVar()
-        self.teacher_first_name = tk.StringVar()
-        self.teacher_last_name = tk.StringVar()
-        self.facility = tk.StringVar()
+    #Widgets
+    ttk.Label(main_frame_login, text = 'ID').pack()
+    ttk.Entry(main_frame_login, textvariable = Id).pack()
+    ttk.Label(main_frame_login, text = 'Password').pack()
+    ttk.Entry(main_frame_login, textvariable = password, show = '*').pack()
+    ttk.Button(main_frame_login, text = 'Login', command = lambda: login(Id, password)).pack()
+    ttk.Button(main_frame_login, text = "Don't have an account? Register Here!", command = lambda: register_page()).pack()
 
-        # Frames
-        self.main_frame = ttk.Frame(window, width = 400, height = 400)
-        self.main_frame.pack(expand = True, fill = 'both')
+    #Grid
+    main_frame.columnconfigure(0, weight = 1)
+    main_frame.columnconfigure(1, weight = 1)
+    main_frame.columnconfigure(2, weight = 1)
+    main_frame.rowconfigure(0, weight = 1)
+    main_frame_login.grid(row = 0, column = 0)
 
-        #Widgets
-        if student_register:
-            self.student_id_label = ttk.Label(self.main_frame, text = 'Enter Student ID')
-            self.student_id_label.pack()
-            self.student_id_entry = ttk.Entry(self.main_frame, textvariable = self.student_id)
-            self.student_id_entry.pack()
-            self.student_password_label = ttk.Label(self.main_frame, text = 'Enter Password')
-            self.student_password_label.pack()
-            self.student_password_entry = ttk.Entry(self.main_frame, textvariable = self.student_password, show = '*')
-            self.student_password_entry.pack()
-            self.student_first_name_label = ttk.Label(self.main_frame, text = 'Enter First Name')
-            self.student_first_name_label.pack()
-            self.student_first_name_entry = ttk.Entry(self.main_frame, textvariable = self.student_first_name)
-            self.student_first_name_entry.pack()
-            self.student_last_name_label = ttk.Label(self.main_frame, text = 'Enter last Name')
-            self.student_last_name_label.pack()
-            self.student_last_name_entry = ttk.Entry(self.main_frame, textvariable = self.student_last_name)
-            self.student_last_name_entry.pack()
-            self.student_grade_class_label = ttk.Label(self.main_frame, text = 'Enter Class')
-            self.student_grade_class_label.pack()
-            self.student_grade_class_entry = ttk.Entry(self.main_frame, textvariable = self.grade_class)
-            self.student_grade_class_entry.pack()
-            self.student_submit = ttk.Button(self.main_frame, text = 'Register', command = self.register)
-            self.student_submit.pack()
-        elif teacher_register:
-            self.teacher_id_label = ttk.Label(self.main_frame, text = 'Enter Teacher ID')
-            self.teacher_id_label.pack()
-            self.teacher_id_entry = ttk.Entry(self.main_frame, textvariable = self.teacher_id)
-            self.teacher_id_entry.pack()
-            self.teacher_password_label = ttk.Label(self.main_frame, text = 'Enter Password')
-            self.teacher_password_label.pack()
-            self.teacher_password_entry = ttk.Entry(self.main_frame, textvariable = self.teacher_password, show = '*')
-            self.teacher_password_entry.pack()
-            self.teacher_first_name_label = ttk.Label(self.main_frame, text = 'Enter First Name')
-            self.teacher_first_name_label.pack()
-            self.teacher_first_name_entry = ttk.Entry(self.main_frame, textvariable = self.teacher_first_name)
-            self.teacher_first_name_entry.pack()
-            self.teacher_last_name_label = ttk.Label(self.main_frame, text = 'Enter last Name')
-            self.teacher_last_name_label.pack()
-            self.teacher_last_name_entry = ttk.Entry(self.main_frame, textvariable = self.teacher_last_name)
-            self.teacher_last_name_entry.pack()
-            self.teacher_facility_label = ttk.Label(self.main_frame, text = 'Enter Facility')
-            self.teacher_facility_label.pack()
-            self.teacher_facility_entry = ttk.Entry(self.main_frame, textvariable = self.facility)
-            self.teacher_facility_entry.pack()
-            self.teacher_submit = ttk.button(self.main_frame, text = 'Register', command = self.register)
-            self.teacher_submit.pack()
+def register_page():
+    def register(user_id, password, first_name, last_name, class_grade, facility):
+        import re
+        pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+        dude = user_id.get()[0]
+        if dude != 'S' or dude != 'T':
+            messagebox.showerror("Register Failed", "ID can only start with S or T.")
+        elif not re.match(pattern, password.get()):
+            messagebox.showerror("Register Failed", "Password is not strong enough. Please include: 8 Characters minimum, A capital letter, A small letter, A number, A symbol.")
 
-    def register(self):
-        if self.student_register:
-            cursor.execute('''INSERT INTO Student (
-                        student_id, 
-                        password, 
-                        first_name, 
-                        last_name, 
-                        class) VALUES (?, ?, ?, ?, ?)''', (
-                        self.student_id.get(), 
-                        self.student_password.get(), 
-                        self.student_first_name.get(), 
-                        self.student_last_name.get(), 
-                        self.grade_class.get()))
-            conn.commit()
-        elif self.teacher_register:
-            cursor.execute('''INSERT INTO Student (
-                        teacher_id, 
-                        password, 
-                        first_name, 
-                        last_name, 
-                        facility_id) VALUES (?, ?, ?, ?, ?)''', (
-                        self.teacher_id.get(), 
-                        self.teacher_password.get(), 
-                        self.teacher_first_name.get(), 
-                        self.teacher_last_name.get(), 
-                        self.facility.get()))
-            conn.commit()
+    #Clear Page
+    remove_widgets()
 
-main = Login_Main_Screen(window)
+    #Vairables
+    user_id = tk.StringVar()
+    password = tk.StringVar()
+    first_name = tk.StringVar()
+    last_name = tk.StringVar()
+    class_grade = tk.StringVar()
+    facility = tk.StringVar()
+    class_facility_bool = tk.BooleanVar()
+    facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
+    classes = ('9A', '9B', '9C', '9D', '10A', '10B', '10C', '10D', '11A', '11B', '11C', '11D', '12A', '12B', '12C', '12D', '13A', '13B', '13C', '13D')
 
-window.mainloop()
+    def student_or_teacher():
+        if class_facility_bool.get():
+            facility_combobox.config(state='disabled')
+            grade_class_combobox.config(state='active')
+        else:
+            grade_class_combobox.config(state='disabled')
+            facility_combobox.config(state='active')
+
+    #Frames
+    main_frame = ttk.Frame(window, width = 864, height = 576)
+    main_frame.pack(expand = True, fill = 'both')
+
+    #Widgets
+    ttk.Radiobutton(main_frame, text = 'Student', variable = class_facility_bool, value = True, command = student_or_teacher).pack()
+    ttk.Radiobutton(main_frame, text = 'Teacher', variable = class_facility_bool, value = False, command = student_or_teacher).pack()
+
+    ttk.Label(main_frame, text = 'Enter User ID').pack()
+    ttk.Entry(main_frame, textvariable = user_id).pack()
+    ttk.Label(main_frame, text = 'Enter Password').pack()
+    ttk.Entry(main_frame, textvariable = password, show = '*').pack()
+    ttk.Label(main_frame, text = 'Enter First Name').pack()
+    ttk.Entry(main_frame, textvariable = first_name).pack()
+    ttk.Label(main_frame, text = 'Enter Last Name').pack()
+    ttk.Entry(main_frame, textvariable = last_name).pack()
+
+    ttk.Label(main_frame, text = 'Choose Class').pack()
+    grade_class_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = class_grade, values = classes)
+    grade_class_combobox.pack()
+
+    ttk.Label(main_frame, text = 'Choose Facility').pack()
+    facility_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = facility, values = facilities)
+    facility_combobox.pack()
+
+    ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility)).pack()
+
+def main():
+    login_page()
+
+if __name__ == '__main__':
+    main()
+    window.mainloop()
