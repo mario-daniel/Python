@@ -21,6 +21,7 @@ cursor.execute('''
         first_name VARCHAR(20),
         last_name VARCHAR(20),
         password VARCHAR(20),
+        salt VARCHAR(60),
         class_grade VARCHAR(3),
         PRIMARY KEY (user_id),
         FOREIGN KEY (facility_id) REFERENCES Facility(facility_id)
