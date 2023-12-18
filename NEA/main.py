@@ -85,9 +85,15 @@ def register_page():
     def register(user_id, password, first_name, last_name, class_grade, facility):
         import re
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
-        dude = user_id.get()[0]
-        if dude != 'S' or dude != 'T':
+        cursor.execute('SELECT user_id FROM User WHERE user_id = ?', (user_id.get(),))
+        Id_db = cursor.fetchall()
+        if user_id.get() == '' or password.get() == '' or first_name.get() == '' or last_name.get() == '' or (class_grade.get() == '' and facility.get() == ''):
+            messagebox.showerror("Register Failed", "All fields must be filled out.")
+        elif user_id.get()[0] != 'S' and user_id.get()[0] != 'T':
             messagebox.showerror("Register Failed", "ID can only start with S or T.")
+        elif Id_db == user_id.get():
+            messagebox.showerror("Register Failed", "User already exists.")
+        
         elif not re.match(pattern, password.get()):
             messagebox.showerror("Register Failed", "Password is not strong enough. Please include: 8 Characters minimum, A capital letter, A small letter, A number, A symbol.")
 
