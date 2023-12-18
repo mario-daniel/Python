@@ -31,21 +31,27 @@ class Card:
         self.card_id = card_id
 
 def remove_widgets():
+    #Removes every widget on the page by cyclying through them and destroying them
     for widget in window.winfo_children():
         widget.destroy()
 
 def login_page():
+    #A nested function for the backend checks
     def login(Id, password):
+        #Gets the password and user id from the database of the user inputed
         cursor.execute('SELECT password FROM User WHERE user_id = ?', (Id.get(),))
         password_db = cursor.fetchall()
         cursor.execute('SELECT user_id FROM User WHERE user_id = ?', (Id.get(),))
         Id_db = cursor.fetchall()
+        #Checks if the user exists or not
         if Id_db == [] or password_db == []:
             messagebox.showerror("Login Failed", "User does not exist")
+        #Checks if the passwords match
         elif password.get() == password_db[0][0]:
             cursor.execute('SELECT first_name, last_name FROM User WHERE user_id = ?', (Id.get(),))
             name = cursor.fetchall()
             messagebox.showinfo('Login Successful', f'Welcome, {name[0][0]} {name[0][1]}')
+            #Checks whether it is a student or teacher and shows them the home page.
             if Id_db[0][0][0] == 'S':
                 cursor.execute('SELECT class_grade FROM User WHERE user_id = ?', (Id.get(),))
                 grade = cursor.fetchall()
@@ -82,20 +88,55 @@ def login_page():
     main_frame_login.grid(row = 0, column = 0)
 
 def register_page():
+    #A nested function for the backend checks and registration
     def register(user_id, password, first_name, last_name, class_grade, facility):
         import re
+        #Password requirements
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+        #Gets user id from database and sets to a variable
         cursor.execute('SELECT user_id FROM User WHERE user_id = ?', (user_id.get(),))
         Id_db = cursor.fetchall()
+        #Checks whether all boxes are filled out.
         if user_id.get() == '' or password.get() == '' or first_name.get() == '' or last_name.get() == '' or (class_grade.get() == '' and facility.get() == ''):
             messagebox.showerror("Register Failed", "All fields must be filled out.")
+        #Checks whether the first value of the id inputed is an S or T.
         elif user_id.get()[0] != 'S' and user_id.get()[0] != 'T':
             messagebox.showerror("Register Failed", "ID can only start with S or T.")
-        elif Id_db == user_id.get():
-            messagebox.showerror("Register Failed", "User already exists.")
-        
+        #Checks if the user is already registered.
+        elif Id_db != []:
+            if Id_db[0][0] == user_id.get():
+                messagebox.showerror("Register Failed", "User already exists.")
+        #Checks if the password matches the requirements
         elif not re.match(pattern, password.get()):
             messagebox.showerror("Register Failed", "Password is not strong enough. Please include: 8 Characters minimum, A capital letter, A small letter, A number, A symbol.")
+        elif re.match(pattern, password.get()):
+            password = password.get()
+            hashed_password = password_hash(password)
+
+
+
+    def password_hash(password):
+        import hashlib
+        import secrets
+
+        # Generate a random salt
+        salt = secrets.token_bytes(16)
+
+        # Combine the password and salt
+        salted_password = password.encode() + salt
+
+        # Create a hash using SHA256
+        hashed_password = hashlib.sha256(salted_password).hexdigest()
+
+    
+    #A nested function to enable and disable the repsective comboboxes of the users' choice
+    def student_or_teacher():
+        if class_facility_bool.get():
+            facility_combobox.config(state='disabled')
+            grade_class_combobox.config(state='active')
+        else:
+            grade_class_combobox.config(state='disabled')
+            facility_combobox.config(state='active')
 
     #Clear Page
     remove_widgets()
@@ -110,14 +151,6 @@ def register_page():
     class_facility_bool = tk.BooleanVar()
     facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
     classes = ('9A', '9B', '9C', '9D', '10A', '10B', '10C', '10D', '11A', '11B', '11C', '11D', '12A', '12B', '12C', '12D', '13A', '13B', '13C', '13D')
-
-    def student_or_teacher():
-        if class_facility_bool.get():
-            facility_combobox.config(state='disabled')
-            grade_class_combobox.config(state='active')
-        else:
-            grade_class_combobox.config(state='disabled')
-            facility_combobox.config(state='active')
 
     #Frames
     main_frame = ttk.Frame(window, width = 864, height = 576)
