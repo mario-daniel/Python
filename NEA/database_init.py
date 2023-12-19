@@ -20,8 +20,8 @@ cursor.execute('''
         facility_id INTEGER,
         first_name VARCHAR(20),
         last_name VARCHAR(20),
-        password VARCHAR(20),
-        salt VARCHAR(60),
+        hashed_password VARCHAR(100),
+        salt VARCHAR(100),
         class_grade VARCHAR(3),
         PRIMARY KEY (user_id),
         FOREIGN KEY (facility_id) REFERENCES Facility(facility_id)
