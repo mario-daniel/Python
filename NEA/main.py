@@ -10,20 +10,21 @@ window.title('RFID System')
 window.geometry('864x576')
 
 class User:
-    def __init__(self, first_name = '', last_name = '', user_id = '', password = ''):
+    def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = ''):
         self.first_name = first_name
         self.last_name = last_name
         self.user_id = user_id
-        self.password = password
+        self.hashed_password = hashed_password
+        self.salt = salt
 
 class Student(User):
-    def __init__(self, first_name = '', last_name = '', user_id = '', password = '', grade = ''):
-        super().__init__(first_name, last_name, user_id, password)
+    def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = '', grade = ''):
+        super().__init__(first_name, last_name, user_id,  hashed_password, salt)
         self.grade = grade
 
 class Teacher(User):
-    def __init__(self, first_name = '', last_name = '', user_id = '', password = '', facility = 0):
-        super().__init__(first_name, last_name, user_id, password)
+    def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = '', facility = 0):
+        super().__init__(first_name, last_name, user_id,  hashed_password, salt)
         self.facility = facility
 
 class Card:
@@ -39,29 +40,42 @@ def login_page():
     #A nested function for the backend checks
     def login(Id, password):
         #Gets the password and user id from the database of the user inputed
-        cursor.execute('SELECT password FROM User WHERE user_id = ?', (Id.get(),))
-        password_db = cursor.fetchall()
-        cursor.execute('SELECT user_id FROM User WHERE user_id = ?', (Id.get(),))
-        Id_db = cursor.fetchall()
+        Id_db = cursor.execute('SELECT user_id FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
+        hashed_password_db = cursor.execute('SELECT hashed_password FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
         #Checks if the user exists or not
-        if Id_db == [] or password_db == []:
+        if Id_db == [] or hashed_password_db == []:
             messagebox.showerror("Login Failed", "User does not exist")
         #Checks if the passwords match
-        elif password.get() == password_db[0][0]:
-            cursor.execute('SELECT first_name, last_name FROM User WHERE user_id = ?', (Id.get(),))
-            name = cursor.fetchall()
+        elif password_check(hashed_password_db, Id, password):
+            name = cursor.execute('SELECT first_name, last_name FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
             messagebox.showinfo('Login Successful', f'Welcome, {name[0][0]} {name[0][1]}')
             #Checks whether it is a student or teacher and shows them the home page.
             if Id_db[0][0][0] == 'S':
-                cursor.execute('SELECT class_grade FROM User WHERE user_id = ?', (Id.get(),))
-                grade = cursor.fetchall()
-                user = Student(name[0][0], name[0][1], Id_db[0][0], password_db[0][0], grade[0][0])
+                grade = cursor.execute('SELECT class_grade FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
+                user = Student(name[0][0], name[0][1], Id_db[0][0], hashed_password_db[0][0], grade[0][0])
+                return user
             else:
-                cursor.execute('SELECT facility FROM User WHERE user_id = ?', (Id.get(),))
-                facility = cursor.fetchall()
-                user = Teacher(name[0][0], name[0][1], Id_db[0][0], password_db[0][0], facility[0][0])
+                facility = cursor.execute('SELECT facility FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
+                user = Teacher(name[0][0], name[0][1], Id_db[0][0], hashed_password_db[0][0], facility[0][0])
+                return user
         else:
             messagebox.showerror("Login Failed", "Incorrect username or password")
+
+    def password_check(hashed_password_db, Id, password):
+        import hashlib
+
+        # Retrieve Salt from database
+        salt = cursor.execute('SELECT salt FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
+
+        # Combine the password and salt
+        #password = password.get()
+        salted_password = password.get().encode('utf-8') + salt[0][0]
+
+        # Create a hashed password to check with the original using SHA256
+        hashed_password = hashlib.sha256(salted_password).hexdigest()
+
+        if hashed_password == hashed_password_db[0][0]: return True
+        else: return False
 
     #Clear Page
     remove_widgets()
@@ -116,9 +130,7 @@ def register_page():
         elif re.match(pattern, password.get()):
             password = password.get()
             hashed_password, salt = password_hash(password)
-            facility_id = facilities[facility.get()]
-            user_id = user_id.get()
-            cursor.execute('INSERT INTO User (user_id, facility_id, first_name, last_name, hashed_password, salt, class_grade) VALUES (?, ?, ?, ?, ?, ?, ?)', (user_id.get(), facility_id, first_name.get(), last_name.get(), hashed_password.get(), salt.get(), class_grade.get()))
+            cursor.execute('INSERT INTO User (user_id, facility_id, first_name, last_name, hashed_password, salt, class_grade) VALUES (?, ?, ?, ?, ?, ?, ?)', (user_id.get(), facilities[facility.get()], first_name.get(), last_name.get(), hashed_password, salt, class_grade.get()))
             conn.commit()
             messagebox.showinfo('Registration Successful', 'Please Login')
             login_page()
@@ -160,7 +172,7 @@ def register_page():
     class_grade = tk.StringVar()
     facility = tk.StringVar()
     class_facility_bool = tk.BooleanVar()
-    facilities = {'Football': 1, 'Sixth Form Room': 2, 'Basketball': 3, 'Cricket': 4, 'Multi-Purpose Hall': 5, 'Fitness Suite': 6}
+    facilities = {'' : 0, 'Football': 1, 'Sixth Form Room': 2, 'Basketball': 3, 'Cricket': 4, 'Multi-Purpose Hall': 5, 'Fitness Suite': 6}
     classes = ('9A', '9B', '9C', '9D', '10A', '10B', '10C', '10D', '11A', '11B', '11C', '11D', '12A', '12B', '12C', '12D', '13A', '13B', '13C', '13D')
 
     #Frames
@@ -190,8 +202,12 @@ def register_page():
 
     ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility, facilities)).pack()
 
+def home_page():
+    print('Home Page')
+
 def main():
     login_page()
+    home_page()
 
 if __name__ == '__main__':
     main()
