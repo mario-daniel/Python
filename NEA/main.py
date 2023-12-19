@@ -63,6 +63,9 @@ def login_page():
         else:
             messagebox.showerror("Login Failed", "Incorrect username or password")
 
+    #Clear Page
+    remove_widgets()
+
     #Vairables
     Id = tk.StringVar()
     password = tk.StringVar()
@@ -89,7 +92,7 @@ def login_page():
 
 def register_page():
     #A nested function for the backend checks and registration
-    def register(user_id, password, first_name, last_name, class_grade, facility):
+    def register(user_id, password, first_name, last_name, class_grade, facility, facilities):
         import re
         #Password requirements
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
@@ -109,10 +112,16 @@ def register_page():
         #Checks if the password matches the requirements
         elif not re.match(pattern, password.get()):
             messagebox.showerror("Register Failed", "Password is not strong enough. Please include: 8 Characters minimum, A capital letter, A small letter, A number, A symbol.")
+        #Hashes password
         elif re.match(pattern, password.get()):
             password = password.get()
-            hashed_password = password_hash(password)
-
+            hashed_password, salt = password_hash(password)
+            facility_id = facilities[facility.get()]
+            user_id = user_id.get()
+            cursor.execute('INSERT INTO User (user_id, facility_id, first_name, last_name, hashed_password, salt, class_grade) VALUES (?, ?, ?, ?, ?, ?, ?)', (user_id.get(), facility_id, first_name.get(), last_name.get(), hashed_password.get(), salt.get(), class_grade.get()))
+            conn.commit()
+            messagebox.showinfo('Registration Successful', 'Please Login')
+            login_page()
 
 
     def password_hash(password):
@@ -123,10 +132,12 @@ def register_page():
         salt = secrets.token_bytes(16)
 
         # Combine the password and salt
-        salted_password = password.encode() + salt
+        salted_password = password.encode('utf-8') + salt
 
         # Create a hash using SHA256
         hashed_password = hashlib.sha256(salted_password).hexdigest()
+
+        return hashed_password, salt
 
     
     #A nested function to enable and disable the repsective comboboxes of the users' choice
@@ -149,7 +160,7 @@ def register_page():
     class_grade = tk.StringVar()
     facility = tk.StringVar()
     class_facility_bool = tk.BooleanVar()
-    facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
+    facilities = {'Football': 1, 'Sixth Form Room': 2, 'Basketball': 3, 'Cricket': 4, 'Multi-Purpose Hall': 5, 'Fitness Suite': 6}
     classes = ('9A', '9B', '9C', '9D', '10A', '10B', '10C', '10D', '11A', '11B', '11C', '11D', '12A', '12B', '12C', '12D', '13A', '13B', '13C', '13D')
 
     #Frames
@@ -174,10 +185,10 @@ def register_page():
     grade_class_combobox.pack()
 
     ttk.Label(main_frame, text = 'Choose Facility').pack()
-    facility_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = facility, values = facilities)
+    facility_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = facility, values = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite'))
     facility_combobox.pack()
 
-    ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility)).pack()
+    ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility, facilities)).pack()
 
 def main():
     login_page()
