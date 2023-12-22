@@ -17,7 +17,7 @@ class User:
         self.hashed_password = hashed_password
         self.salt = salt
 
-class Student(User):
+class Student(User): 
     def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = '', grade = ''):
         super().__init__(first_name, last_name, user_id,  hashed_password, salt)
         self.grade = grade
@@ -49,15 +49,15 @@ def login_page():
         elif password_check(hashed_password_db, Id, password):
             name = cursor.execute('SELECT first_name, last_name FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
             messagebox.showinfo('Login Successful', f'Welcome, {name[0][0]} {name[0][1]}')
-            #Checks whether it is a student or teacher and shows them the home page.
+            #Checks whether it is a student or teacher and shows them their respective home page.
             if Id_db[0][0][0] == 'S':
                 grade = cursor.execute('SELECT class_grade FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
                 user = Student(name[0][0], name[0][1], Id_db[0][0], hashed_password_db[0][0], grade[0][0])
-                return user
+                home_page(user, Id_db)
             else:
                 facility = cursor.execute('SELECT facility FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
                 user = Teacher(name[0][0], name[0][1], Id_db[0][0], hashed_password_db[0][0], facility[0][0])
-                return user
+                home_page(user, Id_db)
         else:
             messagebox.showerror("Login Failed", "Incorrect username or password")
 
@@ -94,7 +94,7 @@ def login_page():
     ttk.Entry(main_frame_login, textvariable = Id).pack()
     ttk.Label(main_frame_login, text = 'Password').pack()
     ttk.Entry(main_frame_login, textvariable = password, show = '*').pack()
-    ttk.Button(main_frame_login, text = 'Login', command = lambda: login(Id, password)).pack()
+    user = ttk.Button(main_frame_login, text = 'Login', command = lambda: login(Id, password)).pack()
     ttk.Button(main_frame_login, text = "Don't have an account? Register Here!", command = lambda: register_page()).pack()
 
     #Grid
@@ -106,8 +106,10 @@ def login_page():
 
 def register_page():
     #A nested function for the backend checks and registration
-    def register(user_id, password, first_name, last_name, class_grade, facility, facilities):
+    def register(user_id, password, first_name, last_name, class_grade, facility, facilities, facility_combobox, grade_class_combobox):
         import re
+        state = facility_combobox['state'].string
+        state2 = grade_class_combobox['state'].string
         #Password requirements
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
         #Gets user id from database and sets to a variable
@@ -119,6 +121,9 @@ def register_page():
         #Checks whether the first value of the id inputed is an S or T.
         elif user_id.get()[0] != 'S' and user_id.get()[0] != 'T':
             messagebox.showerror("Register Failed", "ID can only start with S or T.")
+        #Checks if the the facility or student combobox is filled out when its not their roles respectively.
+        elif (user_id.get()[0] == 'S' and state == 'active') or (user_id.get()[0] == 'T' and state2 == 'active'):
+            messagebox.showerror("Register Failed", "Teacher or Student can not be responsible for a Class or Facility, Respectively.")
         #Checks if the user is already registered.
         elif Id_db != []:
             if Id_db[0][0] == user_id.get():
@@ -135,7 +140,7 @@ def register_page():
             messagebox.showinfo('Registration Successful', 'Please Login')
             login_page()
 
-
+    #A nested function to hash the password the user inputted.
     def password_hash(password):
         import hashlib
         import secrets
@@ -151,7 +156,6 @@ def register_page():
 
         return hashed_password, salt
 
-    
     #A nested function to enable and disable the repsective comboboxes of the users' choice
     def student_or_teacher():
         if class_facility_bool.get():
@@ -200,15 +204,26 @@ def register_page():
     facility_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = facility, values = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite'))
     facility_combobox.pack()
 
-    ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility, facilities)).pack()
+    ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility, facilities, facility_combobox, grade_class_combobox)).pack()
+    ttk.Button(main_frame, text = '<--- Login', command = lambda: login_page()).pack()
 
-def home_page():
-    print('Home Page')
+def home_page(user, Id_db):
+    
+    #Clear Page
+    remove_widgets()
 
-def main():
-    login_page()
-    home_page()
+    ttk.Button(window, text = 'Profile', command = lambda: print('Profile Page')).pack()
+    ttk.Button(window, text = 'Bookings', command = lambda: print('Bookings Page')).pack()
+    ttk.Button(window, text = 'Analytics', command = lambda: print('Analytics Page')).pack()
+
+    if Id_db[0][0][0] == 'S':
+        ttk.Button(window, text = 'Approval Request', command = lambda: print('Approval Request Page')).pack()
+    else:
+        ttk.Button(window, text = 'Approval Management', command = lambda: print('Approval Management Page')).pack()
+
+def profile_page(user):
+
 
 if __name__ == '__main__':
-    main()
+    login_page()
     window.mainloop()
