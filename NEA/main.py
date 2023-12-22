@@ -40,24 +40,20 @@ def login_page():
     #A nested function for the backend checks
     def login(Id, password):
         #Gets the password and user id from the database of the user inputed
-        Id_db = cursor.execute('SELECT user_id FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
-        hashed_password_db = cursor.execute('SELECT hashed_password FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
+        user_db = cursor.execute('SELECT * FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
         #Checks if the user exists or not
-        if Id_db == [] or hashed_password_db == []:
+        if user_db[0][0] == '' or user_db[0][4] == '':
             messagebox.showerror("Login Failed", "User does not exist")
         #Checks if the passwords match
-        elif password_check(hashed_password_db, Id, password):
-            name = cursor.execute('SELECT first_name, last_name FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
-            messagebox.showinfo('Login Successful', f'Welcome, {name[0][0]} {name[0][1]}')
+        elif password_check(user_db[0][4], Id, password):
+            messagebox.showinfo('Login Successful', f'Welcome, {user_db[0][2]} {user_db[0][3]}')
             #Checks whether it is a student or teacher and shows them their respective home page.
-            if Id_db[0][0][0] == 'S':
-                grade = cursor.execute('SELECT class_grade FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
-                user = Student(name[0][0], name[0][1], Id_db[0][0], hashed_password_db[0][0], grade[0][0])
-                home_page(user, Id_db)
+            if user_db[0][0][0] == 'S':
+                user = Student(user_db[0][2], user_db[0][3], user_db[0][0], user_db[0][4], user_db[0][6])
+                home_page(user, user_db)
             else:
-                facility = cursor.execute('SELECT facility FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
-                user = Teacher(name[0][0], name[0][1], Id_db[0][0], hashed_password_db[0][0], facility[0][0])
-                home_page(user, Id_db)
+                user = Teacher(user_db[0][2], user_db[0][3], user_db[0][0], user_db[0][4], user_db[0][1])
+                home_page(user, user_db)
         else:
             messagebox.showerror("Login Failed", "Incorrect username or password")
 
@@ -74,7 +70,7 @@ def login_page():
         # Create a hashed password to check with the original using SHA256
         hashed_password = hashlib.sha256(salted_password).hexdigest()
 
-        if hashed_password == hashed_password_db[0][0]: return True
+        if hashed_password == hashed_password_db: return True
         else: return False
 
     #Clear Page
@@ -94,7 +90,7 @@ def login_page():
     ttk.Entry(main_frame_login, textvariable = Id).pack()
     ttk.Label(main_frame_login, text = 'Password').pack()
     ttk.Entry(main_frame_login, textvariable = password, show = '*').pack()
-    user = ttk.Button(main_frame_login, text = 'Login', command = lambda: login(Id, password)).pack()
+    ttk.Button(main_frame_login, text = 'Login', command = lambda: login(Id, password)).pack()
     ttk.Button(main_frame_login, text = "Don't have an account? Register Here!", command = lambda: register_page()).pack()
 
     #Grid
@@ -207,22 +203,88 @@ def register_page():
     ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility, facilities, facility_combobox, grade_class_combobox)).pack()
     ttk.Button(main_frame, text = '<--- Login', command = lambda: login_page()).pack()
 
-def home_page(user, Id_db):
+def home_page(user, user_db):
     
     #Clear Page
     remove_widgets()
+    
+    #Frames
+    main_frame = ttk.Frame(window, width = 864, height = 576)
+    main_frame.pack(expand = True, fill = 'both')
 
-    ttk.Button(window, text = 'Profile', command = lambda: print('Profile Page')).pack()
-    ttk.Button(window, text = 'Bookings', command = lambda: print('Bookings Page')).pack()
-    ttk.Button(window, text = 'Analytics', command = lambda: print('Analytics Page')).pack()
+    #Widgets
+    ttk.Button(main_frame, text = 'Profile', command = lambda: print('Profile Page')).pack()
+    ttk.Button(main_frame, text = 'Bookings', command = lambda: print('Bookings Page')).pack()
+    ttk.Button(main_frame, text = 'Analytics', command = lambda: print('Analytics Page')).pack()
 
-    if Id_db[0][0][0] == 'S':
-        ttk.Button(window, text = 'Approval Request', command = lambda: print('Approval Request Page')).pack()
+    if user_db[0][0][0] == 'S':
+        ttk.Button(main_frame, text = 'Approval Request', command = lambda: approval_request(user)).pack()
     else:
-        ttk.Button(window, text = 'Approval Management', command = lambda: print('Approval Management Page')).pack()
+        ttk.Button(main_frame, text = 'Approval Management', command = lambda: print('Approval Management Page')).pack()
 
-def profile_page(user):
+def approval_request(user):
 
+    def display_timings_available():
+        if facility.get() != '':
+            for facility_dict, days in timetable.items():
+                if facility_dict == facility.get():
+                    for day_dict, timings in days.items():
+                        if day_dict == day.get():
+                            for timing in timings:
+                                timings_available.append(timing)
+        ttk.Combobox(main_frame, textvariable = timing, values = timings_available).pack()
+
+    #Clear Page
+    remove_widgets()
+
+    #Variables
+    facility = tk.StringVar()
+    day = tk.StringVar()
+    timing = tk.StringVar()
+    timings_available = []
+    timetable = {
+        'Football': {
+            'Monday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Tuesday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Wednesday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Thursday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Friday': ['8:10 - 8:55', '8:55 - 9:40', '9:40 - 10:25', '10:25 - 10:45', '10:45 - 11:30']},
+        'Basketball': {
+            'Monday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Tuesday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Wednesday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Thursday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Friday': ['8:10 - 8:55', '8:55 - 9:40', '9:40 - 10:25', '10:25 - 10:45', '10:45 - 11:30']},
+        'Cricket': {
+            'Monday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Tuesday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Wednesday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Thursday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Friday': ['8:10 - 8:55', '8:55 - 9:40', '9:40 - 10:25', '10:25 - 10:45', '10:45 - 11:30']},
+        'Multi-Purpose Hall': {
+            'Monday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Tuesday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Wednesday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Thursday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Friday': ['8:10 - 8:55', '8:55 - 9:40', '9:40 - 10:25', '10:25 - 10:45', '10:45 - 11:30']},
+        'Fitness Suite': {
+            'Monday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Tuesday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Wednesday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Thursday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
+            'Friday': ['8:10 - 8:55', '8:55 - 9:40', '9:40 - 10:25', '10:25 - 10:45', '10:45 - 11:30']}
+            }
+
+    #Frames
+    main_frame = ttk.Frame(window, width = 864, height = 576)
+    main_frame.pack(expand = True, fill = 'both')
+
+    #Widgets
+    ttk.Label(main_frame, text = 'Approval Request').pack()
+    ttk.Label(main_frame, text = 'Request a new approval').pack()
+    ttk.Combobox(main_frame, textvariable = facility, values = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')).pack()
+    ttk.Combobox(main_frame, textvariable = day, values = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')).pack()
+    ttk.Button(main_frame, text = 'Check Timings', command = lambda: display_timings_available()).pack()
 
 if __name__ == '__main__':
     login_page()
