@@ -224,24 +224,33 @@ def home_page(user, user_db):
 
 def approval_request(user):
 
-    def display_timings_available():
-        if facility.get() != '':
-            for facility_dict, days in timetable.items():
-                if facility_dict == facility.get():
-                    for day_dict, timings in days.items():
-                        if day_dict == day.get():
-                            for timing in timings:
-                                timings_available.append(timing)
-        ttk.Combobox(main_frame, textvariable = timing, values = timings_available).pack()
+    def display_timings_available(timing, combobox_created):
+        if 'timings_available_combobox' in locals():
+            timings_available_combobox.destroy()
+            combobox_created = False
+        else:
+            timings_available = []
+            if facility.get() != '':
+                for facility_dict, days in timetable.items():
+                    if facility_dict == facility.get():
+                        for day_dict, timings in days.items():
+                            if day_dict == day.get():
+                                for timing in timings:
+                                    timings_available.append(timing)
+            timings_available_combobox = ttk.Combobox(main_frame, textvariable = timing, values = timings_available)
+            timings_available_combobox.pack()
+            combobox_created = True
+        return combobox_created
 
     #Clear Page
     remove_widgets()
 
     #Variables
+    combobox_created = False
+
     facility = tk.StringVar()
     day = tk.StringVar()
     timing = tk.StringVar()
-    timings_available = []
     timetable = {
         'Football': {
             'Monday': ['7:40 - 8:25', '8:25 - 9:10', '9:10 - 9:55', '9:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
@@ -282,9 +291,9 @@ def approval_request(user):
     #Widgets
     ttk.Label(main_frame, text = 'Approval Request').pack()
     ttk.Label(main_frame, text = 'Request a new approval').pack()
-    ttk.Combobox(main_frame, textvariable = facility, values = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')).pack()
+    ttk.Combobox(main_frame, textvariable = facility, values = ('Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')).pack()
     ttk.Combobox(main_frame, textvariable = day, values = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')).pack()
-    ttk.Button(main_frame, text = 'Check Timings', command = lambda: display_timings_available()).pack()
+    ttk.Button(main_frame, text = 'Check Timings', command = lambda: combobox_created == display_timings_available(timing, combobox_created)).pack()
 
 if __name__ == '__main__':
     login_page()
