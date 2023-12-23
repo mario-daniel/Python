@@ -135,7 +135,6 @@ def register_page():
             conn.commit()
             messagebox.showinfo('Registration Successful', 'Please Login')
             login_page()
-
     #A nested function to hash the password the user inputted.
     def password_hash(password):
         import hashlib
@@ -236,10 +235,21 @@ def approval_request(user):
         timings_available_combobox.config(state = 'active')
         timings_available_combobox.config(values = timings_available)
 
+    def get_time():
+        timing_format = timing.get()
+        for index in range(len(timing_format)):
+            if timing_format[index] == '-':
+                start_time = timing_format[:(timing_format[index - 1])]
+
+    def request(user, facilities):
+        start_time, end_time = get_time()
+        cursor.execute('INSERT INTO Booking (facility_id, user_id, booking_start_time, booking_end_time, approved) VALUES (?, ?, ?, ?, ?)', (facilities[facility.get()], user.user_id, ))
+
     #Clear Page
     remove_widgets()
 
     #Variables
+    facilities = {'' : 0, 'Football': 1, 'Sixth Form Room': 2, 'Basketball': 3, 'Cricket': 4, 'Multi-Purpose Hall': 5, 'Fitness Suite': 6}
     facility = tk.StringVar()
     day = tk.StringVar()
     timing = tk.StringVar()
@@ -291,7 +301,7 @@ def approval_request(user):
     timings_available_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = timing, values = [])
     timings_available_combobox.pack()
     ttk.Button(main_frame, text = 'Check Available Timings', command = lambda: display_timings_available(timing, timings_available_combobox)).pack()
-    ttk.Button(main_frame, text = 'Request', command = lambda: print('Requested')).pack()
+    ttk.Button(main_frame, text = 'Request', command = lambda: request(user, facilities)).pack()
 
 if __name__ == '__main__':
     login_page()
