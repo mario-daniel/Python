@@ -67,7 +67,7 @@ def login_page():
         #Gets the password and user id from the database of the user inputed
         user_db = cursor.execute('SELECT * FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
         #Checks if the user exists or not
-        if user_db[0][0] == '' or user_db[0][4] == '':
+        if user_db == []:
             messagebox.showerror("Login Failed", "User does not exist")
         #Checks if the passwords match
         elif password_check(user_db[0][4], Id, password):
@@ -228,7 +228,6 @@ def register_page():
     ttk.Button(main_frame, text = '<--- Login', command = lambda: login_page()).pack()
 
 def home_page(user, user_db):
-    
     #Clear Page
     remove_widgets()
     
