@@ -7,7 +7,7 @@ cursor = conn.cursor()
 
 window = tk.Tk()
 window.title('RFID System')
-window.geometry('864x576')
+window.geometry('900x600')
 
 class User:
     def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = ''):
@@ -21,6 +21,31 @@ class Student(User):
     def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = '', grade = ''):
         super().__init__(first_name, last_name, user_id,  hashed_password, salt)
         self.grade = grade
+
+    def get_time(self, day, timing):
+        timing_format = timing.get()
+        for index in range(len(timing_format)):
+            if timing_format[index] == '-':
+                start_time = f'{timing_format[:index - 1].strip()}:00'
+                end_time = f'{timing_format[index + 1:].strip()}:00'
+        from datetime import datetime, timedelta
+        # Get today's date
+        day = day.get()
+        today = datetime.today()
+        Day_num = {'Monday' : 0, 'Tuesday' : 1, 'Wednesday' : 2, 'Thursday' : 3, 'Friday' : 4}
+        # Calculate days until next Day
+        days_delta = (Day_num[day] - today.weekday()) % 7
+        # Calculate the date of the Day
+        date = (today + timedelta(days=days_delta)).strftime('%Y-%m-%d')
+        start_date_time = f'{start_time} {date}'
+        end_date_time = f'{end_time} {date}'
+        return start_date_time, end_date_time, date, start_time, end_time, day
+    
+    def request(self, facilities, day, facility, timing):
+        start_date_time, end_date_time, date, start_time, end_time, day = self.get_time(day, timing)
+        cursor.execute('INSERT INTO Booking (facility_id, user_id, booking_start_time, booking_end_time, approved) VALUES (?, ?, ?, ?, ?)', (facilities[facility.get()], self.user_id, start_date_time, end_date_time, 0))
+        conn.commit()
+        messagebox.showinfo('Request Successful', f'Requested from {start_time} to {end_time} on {day} {date}')
 
 class Teacher(User):
     def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = '', facility = 0):
@@ -235,32 +260,6 @@ def approval_request(user):
         timings_available_combobox.config(state = 'active')
         timings_available_combobox.config(values = timings_available)
 
-    def get_time(day):
-        timing_format = timing.get()
-        for index in range(len(timing_format)):
-            if timing_format[index] == '-':
-                start_time = f'{timing_format[:index - 1].strip()}:00'
-                end_time = f'{timing_format[index + 1:].strip()}:00'
-        
-        from datetime import datetime, timedelta
-        # Get today's date
-        day = day.get()
-        today = datetime.today()
-        Day_num = {'Monday' : 0, 'Tuesday' : 1, 'Wednesday' : 2, 'Thursday' : 3, 'Friday' : 4}
-        # Calculate days until next Day
-        days_delta = (Day_num[day] - today.weekday()) % 7
-        # Calculate the date of the Day
-        date = (today + timedelta(days=days_delta)).strftime('%Y-%m-%d')
-        start_date_time = f'{start_time} {date}'
-        end_date_time = f'{end_time} {date}'
-        return start_date_time, end_date_time, date, start_time, end_time, day
-
-    def request(user, facilities, day):
-        start_date_time, end_date_time, date, start_time, end_time, day = get_time(day)
-        cursor.execute('INSERT INTO Booking (facility_id, user_id, booking_start_time, booking_end_time, approved) VALUES (?, ?, ?, ?, ?)', (facilities[facility.get()], user.user_id, start_date_time, end_date_time, 0))
-        conn.commit()
-        messagebox.showinfo('Request Successful', f'Requested from {start_time} to {end_time} on {day} {date}')
-
     #Clear Page
     remove_widgets()
 
@@ -303,8 +302,9 @@ def approval_request(user):
             }
 
     #Frames
-    main_frame = ttk.Frame(window, width = 864, height = 576)
+    main_frame = ttk.Frame(window, width = 900, height = 600)
     main_frame.pack(expand = True, fill = 'both')
+    outgoing_approval_frame = ttk.Frame(window, )
 
     #Widgets
     ttk.Label(main_frame, text = 'Approval Request').pack()
@@ -317,7 +317,7 @@ def approval_request(user):
     timings_available_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = timing, values = [])
     timings_available_combobox.pack()
     ttk.Button(main_frame, text = 'Check Available Timings', command = lambda: display_timings_available(timing, timings_available_combobox)).pack()
-    ttk.Button(main_frame, text = 'Request', command = lambda: request(user, facilities, day)).pack()
+    ttk.Button(main_frame, text = 'Request', command = lambda: user.request(facilities, day, facility, timing)).pack()
 
 if __name__ == '__main__':
     login_page()
