@@ -43,7 +43,7 @@ class Student(User):
     
     def request(self, facilities, day, facility, timing):
         start_date_time, end_date_time, date, start_time, end_time, day = self.get_time(day, timing)
-        cursor.execute('INSERT INTO Booking (facility_id, user_id, booking_start_time, booking_end_time, approved) VALUES (?, ?, ?, ?, ?)', (facilities[facility.get()], self.user_id, start_date_time, end_date_time, 0))
+        cursor.execute('INSERT INTO Booking (facility_id, user_id, booking_start_time, booking_end_time) VALUES (?, ?, ?, ?)', (facilities[facility.get()], self.user_id, start_date_time, end_date_time))
         conn.commit()
         messagebox.showinfo('Request Successful', f'Requested from {start_time} to {end_time} on {day} {date}')
 
@@ -55,6 +55,10 @@ class Teacher(User):
 class Card:
     def __init__(self, card_id = 0):
         self.card_id = card_id
+
+class Segment(ttk.Frame):
+    def __init__(self, parent, facility, status, start_time, end_time, date):
+        super().__init__(master = parent)
 
 def remove_widgets():
     #Removes every widget on the page by cyclying through them and destroying them
@@ -74,10 +78,10 @@ def login_page():
             messagebox.showinfo('Login Successful', f'Welcome, {user_db[0][2]} {user_db[0][3]}')
             #Checks whether it is a student or teacher and shows them their respective home page.
             if user_db[0][0][0] == 'S':
-                user = Student(user_db[0][2], user_db[0][3], user_db[0][0], user_db[0][4], user_db[0][6])
+                user = Student(user_db[0][2], user_db[0][3], user_db[0][0], user_db[0][4], user_db[0][5], user_db[0][6])
                 home_page(user, user_db)
             else:
-                user = Teacher(user_db[0][2], user_db[0][3], user_db[0][0], user_db[0][4], user_db[0][1])
+                user = Teacher(user_db[0][2], user_db[0][3], user_db[0][0], user_db[0][4], user_db[0][5], user_db[0][1])
                 home_page(user, user_db)
         else:
             messagebox.showerror("Login Failed", "Incorrect username or password")
@@ -241,11 +245,11 @@ def home_page(user, user_db):
     ttk.Button(main_frame, text = 'Analytics', command = lambda: print('Analytics Page')).pack()
 
     if user_db[0][0][0] == 'S':
-        ttk.Button(main_frame, text = 'Approval Request', command = lambda: approval_request(user)).pack()
+        ttk.Button(main_frame, text = 'Approval Request', command = lambda: approval_request_page(user)).pack()
     else:
         ttk.Button(main_frame, text = 'Approval Management', command = lambda: print('Approval Management Page')).pack()
 
-def approval_request(user):
+def approval_request_page(user):
 
     def display_timings_available(timing, timings_available_combobox):
         timings_available = []
@@ -258,6 +262,10 @@ def approval_request(user):
                                 timings_available.append(timing)
         timings_available_combobox.config(state = 'active')
         timings_available_combobox.config(values = timings_available)
+
+    def display_outgoing_approvals(user):
+        booking = cursor.execute('SELECT * FROM Booking WHERE user_id = ?', (user.user_id,)).fetchall()
+        print(booking)
 
     #Clear Page
     remove_widgets()
@@ -303,7 +311,7 @@ def approval_request(user):
     #Frames
     main_frame = ttk.Frame(window, width = 900, height = 600)
     main_frame.pack(expand = True, fill = 'both')
-    outgoing_approval_frame = ttk.Frame(window, )
+    outgoing_approval_frame = ttk.Frame(window, width = 900, height = 300)
 
     #Widgets
     ttk.Label(main_frame, text = 'Approval Request').pack()
@@ -317,6 +325,7 @@ def approval_request(user):
     timings_available_combobox.pack()
     ttk.Button(main_frame, text = 'Check Available Timings', command = lambda: display_timings_available(timing, timings_available_combobox)).pack()
     ttk.Button(main_frame, text = 'Request', command = lambda: user.request(facilities, day, facility, timing)).pack()
+    ttk.Button(main_frame, text = 'Check outgoing approvals', command = lambda: display_outgoing_approvals(user)).pack()
 
 if __name__ == '__main__':
     login_page()
