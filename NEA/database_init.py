@@ -3,6 +3,12 @@ import sqlite3
 conn = sqlite3.connect("rfid")
 cursor = conn.cursor()
 
+cursor.execute("DROP TABLE IF EXISTS Facility;")
+cursor.execute("DROP TABLE IF EXISTS User;")
+cursor.execute("DROP TABLE IF EXISTS Booking;")
+cursor.execute("DROP TABLE IF EXISTS Card;")
+cursor.execute("DROP TABLE IF EXISTS Swipe;")
+
 #Facility Table
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS Facility (
@@ -31,13 +37,13 @@ cursor.execute('''
 #Booking Table
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS Booking (
-        booking_number INTEGER,
+        booking_number INTEGER PRIMARY KEY AUTOINCREMENT,
         facility_id INTEGER,
         user_id VARCHAR(10),
-        booking_start_time DATETIME,
-        booking_end_time DATETIME,
+        booking_start_time TIME,
+        booking_end_time TIME,
+        booking_date DATE,
         approved BOOLEAN,
-        PRIMARY KEY (booking_number),
         FOREIGN KEY (facility_id) REFERENCES Facility(facility_id),
         FOREIGN KEY (user_id) REFERENCES User(user_id)
     );
