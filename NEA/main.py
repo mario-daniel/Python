@@ -44,14 +44,12 @@ class Student(User):
         self.timeslot_id_db = cursor.execute('SELECT timeslot_id FROM Timeslot WHERE day = ? AND facility_id = ? AND start_time = ? AND end_time = ?', (self.day, facility_id_db[0][0], self.start_time, self.end_time)).fetchall()
         cursor.execute('INSERT INTO Booking (facility_id, user_id, timeslot_id, booking_date) VALUES (?, ?, ?, ?)', (facility_id_db[0][0], self.user_id, self.timeslot_id_db[0][0], self.date))
         conn.commit()
-        self.selection = 'add'
         self.update_table()
         timing.set('')
         timings_available_combobox.config(state = 'disabled')
         messagebox.showinfo('Request Successful', f'Requested from {self.start_time} to {self.end_time} on {self.day} {self.date}')
     
     def update_table(self):
-        if self.selection == 'add':
             cursor.execute('UPDATE Timeslot SET status = NULL WHERE timeslot_id = ?', (self.timeslot_id_db[0][0],))
             conn.commit()
 
@@ -64,22 +62,25 @@ class Card:
     def __init__(self, card_id = 0):
         self.card_id = card_id
 
-class Segment(ttk.Frame):
-    def __init__(self, parent, facility, status, start_time, end_time, date, booking_number, outgoing_approvals):
+class Outgoing_Approval_Segment(ttk.Frame):
+    def __init__(self, parent, booking_number, facility, start_time, end_time, day, date, status, timeslot_id, outgoing_approvals):
         super().__init__(master = parent)
         self.booking_number = booking_number
+        self.timeslot_id = timeslot_id
         self.outgoing_approvals = outgoing_approvals
         self.rowconfigure(0, weight = 1)
-        self.columnconfigure((0, 1, 2, 3, 4, 5), weight = 1)
+        self.columnconfigure((0, 1, 2, 3, 4, 5, 6), weight = 1)
         ttk.Label(self, text = facility, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 0)
         ttk.Label(self, text = start_time, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 1)
         ttk.Label(self, text = end_time, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 2)
-        ttk.Label(self, text = date, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 3)
-        ttk.Label(self, text = status, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 4)
-        ttk.Button(self, text = 'Remove', command = lambda: self.remove_booking()).grid(row = 0, column = 5)
+        ttk.Label(self, text = day, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 3)
+        ttk.Label(self, text = date, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 4)
+        ttk.Label(self, text = status, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 5)
+        ttk.Button(self, text = 'Remove', command = lambda: self.remove_booking()).grid(row = 0, column = 6)
         self.pack()
     
     def remove_booking(self):
+        cursor.execute('UPDATE Timeslot SET status = FALSE WHERE timeslot_id = ?', (self.timeslot_id,))
         cursor.execute('DELETE FROM Booking WHERE booking_number = ?', (self.booking_number,))
         conn.commit()
         for approval in self.outgoing_approvals: 
@@ -281,7 +282,7 @@ def home_page(user):
     else:
         ttk.Button(main_frame, text = 'Approval Management', command = lambda: print('Approval Management Page')).pack()
 
-def approval_request_page(user):
+def approval_request_page(user): 
 
     def display_timings_available(day, facility, timings_available_combobox):
         timings_available = []
@@ -297,14 +298,17 @@ def approval_request_page(user):
         timings_available_combobox.config(values = timings_available)
 
     def display_outgoing_approvals(user, outgoing_approval_frame):
-        facilities = {1: 'Football', 2: 'Sixth Form Room', 3: 'Basketball', 4: 'Cricket', 5: 'Multi-Purpose Hall', 6: 'Fitness Suite'}
-        bookings = cursor.execute('SELECT * FROM Booking WHERE user_id = ?', (user.user_id,)).fetchall()
+        bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id 
+                                    FROM Facility, Timeslot, Booking 
+                                    WHERE Facility.facility_id = Booking.facility_id
+                                        AND Timeslot.timeslot_id = Booking.timeslot_id
+                                        AND Booking.user_id = ?;''', (user.user_id,)).fetchall()
         outgoing_approvals = []
         for booking in bookings:
             if booking[6] == None: status = 'Pending'
             elif booking[6] == 1: status = 'Approved'
             else: status = 'Declined'
-            approval = Segment(outgoing_approval_frame, facilities[booking[1]], status, booking[3], booking[4], booking[5], booking[0], outgoing_approvals)
+            approval = Outgoing_Approval_Segment(outgoing_approval_frame, booking[0], booking[1], booking[2], booking[3], booking[4], booking[5], status, booking[7], outgoing_approvals)
             outgoing_approvals.append(approval)
 
     #Clear Page
@@ -326,7 +330,7 @@ def approval_request_page(user):
     ttk.Label(main_frame, text = 'Approval Request').pack()
     ttk.Label(main_frame, text = 'Request a new approval').pack()
     ttk.Label(main_frame, text = 'Pick Facility').pack()
-    ttk.Combobox(main_frame, textvariable = facility, values = ('Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')).pack()
+    ttk.Combobox(main_frame, textvariable = facility, values = facilities).pack()
     ttk.Label(main_frame, text = 'Pick Day').pack()
     ttk.Combobox(main_frame, textvariable = day, values = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')).pack()
     ttk.Label(main_frame, text = 'Pick Timing').pack()
