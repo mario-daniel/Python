@@ -37,15 +37,23 @@ class Student(User):
         days_delta = (Day_num[day] - today.weekday()) % 7
         # Calculate the date of the Day
         date = (today + timedelta(days=days_delta)).strftime('%Y-%m-%d')
-        start_date_time = f'{start_time} {date}'
-        end_date_time = f'{end_time} {date}'
-        return start_date_time, end_date_time, date, start_time, end_time, day
+        return date, start_time, end_time, day
     
-    def request(self, facilities, day, facility, timing):
-        start_date_time, end_date_time, date, start_time, end_time, day = self.get_time(day, timing)
-        cursor.execute('INSERT INTO Booking (facility_id, user_id, booking_start_time, booking_end_time) VALUES (?, ?, ?, ?)', (facilities[facility.get()], self.user_id, start_date_time, end_date_time))
+    def request(self, facilities, day, facility, timing, timetable, timings_available_combobox):
+        date, start_time, end_time, day = self.get_time(day, timing)
+        cursor.execute('INSERT INTO Booking (facility_id, user_id, booking_start_time, booking_end_time, booking_date) VALUES (?, ?, ?, ?, ?)', (facilities[facility.get()], self.user_id, start_time, end_time, date))
         conn.commit()
+        timetable = self.add_update_table(timetable, timing, facility, day)
+        timing.set('')
+        timings_available_combobox.config(state='disabled')
+        with open('timetable_on_server.py', 'w') as file:
+            file.write(timetable)
         messagebox.showinfo('Request Successful', f'Requested from {start_time} to {end_time} on {day} {date}')
+    
+    def add_update_table(self, timetable, timing, facility, day):
+        if timing.get() in timetable[facility.get()][day]:
+            timetable[facility.get()][day].remove(timing.get())
+        return timetable
 
 class Teacher(User):
     def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = '', facility = 0):
@@ -57,8 +65,29 @@ class Card:
         self.card_id = card_id
 
 class Segment(ttk.Frame):
-    def __init__(self, parent, facility, status, start_time, end_time, date):
+    def __init__(self, parent, facility, status, start_time, end_time, date, booking_number, outgoing_approvals):
         super().__init__(master = parent)
+        self.booking_number = booking_number
+        self.outgoing_approvals = outgoing_approvals
+        self.rowconfigure(0, weight = 1)
+        self.columnconfigure((0, 1, 2, 3, 4, 5), weight = 1)
+        ttk.Label(self, text = facility, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 0)
+        ttk.Label(self, text = start_time, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 1)
+        ttk.Label(self, text = end_time, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 2)
+        ttk.Label(self, text = date, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 3)
+        ttk.Label(self, text = status, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 4)
+        ttk.Button(self, text = 'Remove', command = lambda: self.remove_booking()).grid(row = 0, column = 5)
+        self.pack()
+    
+    def remove_booking(self):
+        cursor.execute('DELETE FROM Booking WHERE booking_number = ?', (self.booking_number,))
+        conn.commit()
+        for approval in self.outgoing_approvals: 
+            if approval.booking_number == self.booking_number:
+                for widget in approval.winfo_children():
+                    widget.destroy()
+                self.outgoing_approvals.remove(approval)
+                del approval
 
 def remove_widgets():
     #Removes every widget on the page by cyclying through them and destroying them
@@ -79,10 +108,10 @@ def login_page():
             #Checks whether it is a student or teacher and shows them their respective home page.
             if user_db[0][0][0] == 'S':
                 user = Student(user_db[0][2], user_db[0][3], user_db[0][0], user_db[0][4], user_db[0][5], user_db[0][6])
-                home_page(user, user_db)
+                home_page(user)
             else:
                 user = Teacher(user_db[0][2], user_db[0][3], user_db[0][0], user_db[0][4], user_db[0][5], user_db[0][1])
-                home_page(user, user_db)
+                home_page(user)
         else:
             messagebox.showerror("Login Failed", "Incorrect username or password")
 
@@ -164,6 +193,7 @@ def register_page():
             conn.commit()
             messagebox.showinfo('Registration Successful', 'Please Login')
             login_page()
+    
     #A nested function to hash the password the user inputted.
     def password_hash(password):
         import hashlib
@@ -179,7 +209,7 @@ def register_page():
         hashed_password = hashlib.sha256(salted_password).hexdigest()
 
         return hashed_password, salt
-
+    
     #A nested function to enable and disable the repsective comboboxes of the users' choice
     def student_or_teacher():
         if class_facility_bool.get():
@@ -231,7 +261,7 @@ def register_page():
     ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility, facilities, facility_combobox, grade_class_combobox)).pack()
     ttk.Button(main_frame, text = '<--- Login', command = lambda: login_page()).pack()
 
-def home_page(user, user_db):
+def home_page(user):
     #Clear Page
     remove_widgets()
     
@@ -244,14 +274,14 @@ def home_page(user, user_db):
     ttk.Button(main_frame, text = 'Bookings', command = lambda: print('Bookings Page')).pack()
     ttk.Button(main_frame, text = 'Analytics', command = lambda: print('Analytics Page')).pack()
 
-    if user_db[0][0][0] == 'S':
+    if user.user_id[0] == 'S':
         ttk.Button(main_frame, text = 'Approval Request', command = lambda: approval_request_page(user)).pack()
     else:
         ttk.Button(main_frame, text = 'Approval Management', command = lambda: print('Approval Management Page')).pack()
 
 def approval_request_page(user):
 
-    def display_timings_available(timing, timings_available_combobox):
+    def display_timings_available(timing, timings_available_combobox, timetable):
         timings_available = []
         if facility.get() != '':
             for facility_dict, days in timetable.items():
@@ -263,55 +293,33 @@ def approval_request_page(user):
         timings_available_combobox.config(state = 'active')
         timings_available_combobox.config(values = timings_available)
 
-    def display_outgoing_approvals(user):
-        booking = cursor.execute('SELECT * FROM Booking WHERE user_id = ?', (user.user_id,)).fetchall()
-        print(booking)
+    def display_outgoing_approvals(user, outgoing_approval_frame):
+        facilities = {1: 'Football', 2: 'Sixth Form Room', 3: 'Basketball', 4: 'Cricket', 5: 'Multi-Purpose Hall', 6: 'Fitness Suite'}
+        bookings = cursor.execute('SELECT * FROM Booking WHERE user_id = ?', (user.user_id,)).fetchall()
+        outgoing_approvals = []
+        for booking in bookings:
+            if booking[6] == None: status = 'Pending'
+            elif booking[6] == 1: status = 'Approved'
+            else: status = 'Declined'
+            approval = Segment(outgoing_approval_frame, facilities[booking[1]], status, booking[3], booking[4], booking[5], booking[0], outgoing_approvals)
+            outgoing_approvals.append(approval)
 
     #Clear Page
     remove_widgets()
 
     #Variables
-    facilities = {'' : 0, 'Football': 1, 'Sixth Form Room': 2, 'Basketball': 3, 'Cricket': 4, 'Multi-Purpose Hall': 5, 'Fitness Suite': 6}
+    facilities = {'Football': 1, 'Sixth Form Room': 2, 'Basketball': 3, 'Cricket': 4, 'Multi-Purpose Hall': 5, 'Fitness Suite': 6}
     facility = tk.StringVar()
     day = tk.StringVar()
     timing = tk.StringVar()
-    timetable = {
-        'Football': {
-            'Monday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Tuesday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Wednesday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Thursday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Friday': ['08:10 - 08:55', '08:55 - 09:40', '09:40 - 10:25', '10:25 - 10:45', '10:45 - 11:30']},
-        'Basketball': {
-            'Monday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Tuesday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Wednesday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Thursday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Friday': ['08:10 - 08:55', '08:55 - 09:40', '09:40 - 10:25', '10:25 - 10:45', '10:45 - 11:30']},
-        'Cricket': {
-            'Monday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Tuesday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Wednesday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Thursday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Friday': ['08:10 - 08:55', '08:55 - 09:40', '09:40 - 10:25', '10:25 - 10:45', '10:45 - 11:30']},
-        'Multi-Purpose Hall': {
-            'Monday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Tuesday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Wednesday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Thursday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Friday': ['08:10 - 08:55', '08:55 - 09:40', '09:40 - 10:25', '10:25 - 10:45', '10:45 - 11:30']},
-        'Fitness Suite': {
-            'Monday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Tuesday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Wednesday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Thursday': ['07:40 - 08:25', '08:25 - 09:10', '09:10 - 09:55', '09:55 - 10:15', '10:15 - 11:00', '11:00 - 11:45', '11:45 - 12:30', '12:30 - 13:10', '13:10 - 13:55', '13:55 - 14:40'],
-            'Friday': ['08:10 - 08:55', '08:55 - 09:40', '09:40 - 10:25', '10:25 - 10:45', '10:45 - 11:30']}
-            }
+    from timetable_on_server import timetable
+    from original_timetable_on_server import original_timetable
 
     #Frames
     main_frame = ttk.Frame(window, width = 900, height = 600)
     main_frame.pack(expand = True, fill = 'both')
-    outgoing_approval_frame = ttk.Frame(window, width = 900, height = 300)
+    outgoing_approval_frame = ttk.Frame(window, width = 900, height = 300, borderwidth = 10, relief = tk.GROOVE)
+    outgoing_approval_frame.pack(expand = True, fill = 'both')
 
     #Widgets
     ttk.Label(main_frame, text = 'Approval Request').pack()
@@ -323,9 +331,10 @@ def approval_request_page(user):
     ttk.Label(main_frame, text = 'Pick Timing').pack()
     timings_available_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = timing, values = [])
     timings_available_combobox.pack()
-    ttk.Button(main_frame, text = 'Check Available Timings', command = lambda: display_timings_available(timing, timings_available_combobox)).pack()
-    ttk.Button(main_frame, text = 'Request', command = lambda: user.request(facilities, day, facility, timing)).pack()
-    ttk.Button(main_frame, text = 'Check outgoing approvals', command = lambda: display_outgoing_approvals(user)).pack()
+    ttk.Button(main_frame, text = 'Check Available Timings', command = lambda: display_timings_available(timing, timings_available_combobox, timetable)).pack()
+    ttk.Button(main_frame, text = 'Request', command = lambda: user.request(facilities, day, facility, timing, timetable, timings_available_combobox)).pack()
+    ttk.Button(main_frame, text = 'Check outgoing approvals', command = lambda: display_outgoing_approvals(user, outgoing_approval_frame)).pack()
+    ttk.Button(main_frame, text = '<--- Home', command = lambda: home_page(user)).pack()
 
 if __name__ == '__main__':
     login_page()
