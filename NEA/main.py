@@ -17,6 +17,63 @@ class User:
         self.hashed_password = hashed_password
         self.salt = salt
 
+    def login(self, Id, password):
+        user_db = cursor.execute('SELECT * FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
+        if user_db == []:
+            messagebox.showerror("Login Failed", "User does not exist")
+        elif self.password_check(user_db[0][4], Id, password):
+            messagebox.showinfo('Login Successful', f'Welcome, {user_db[0][2]} {user_db[0][3]}')
+            if user_db[0][0][0] == 'S':
+                return Student(user_db[0][2], user_db[0][3], user_db[0][0], user_db[0][4], user_db[0][5], user_db[0][6])
+            else:
+                return Teacher(user_db[0][2], user_db[0][3], user_db[0][0], user_db[0][4], user_db[0][5], user_db[0][1])
+        else:
+            messagebox.showerror("Login Failed", "Incorrect username or password")
+
+    def password_check(self, hashed_password_db, Id, password):
+        import hashlib
+        salt = cursor.execute('SELECT salt FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
+        salted_password = password.get().encode('utf-8') + salt[0][0]
+        hashed_password = hashlib.sha256(salted_password).hexdigest()
+        if hashed_password == hashed_password_db: return True
+        else: return False
+
+    def register(self, user_id, password, first_name, last_name, class_grade, facility, facility_combobox, grade_class_combobox):
+        import re
+        state = facility_combobox['state'].string
+        state2 = grade_class_combobox['state'].string
+        pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+        Id_db = cursor.execute('SELECT user_id FROM User WHERE user_id = ?', (user_id.get(),)).fetchall()
+
+        if user_id.get() == '' or password.get() == '' or first_name.get() == '' or last_name.get() == '' or (class_grade.get() == '' and facility.get() == ''):
+            messagebox.showerror("Register Failed", "All fields must be filled out.")
+        elif user_id.get()[0] != 'S' and user_id.get()[0] != 'T':
+            messagebox.showerror("Register Failed", "ID can only start with S or T.")
+        elif (user_id.get()[0] == 'S' and state == 'active') or (user_id.get()[0] == 'T' and state2 == 'active'):
+            messagebox.showerror("Register Failed", "Teacher or Student can not be responsible for a Class or Facility, Respectively.")
+        elif Id_db != []:
+            if Id_db[0][0] == user_id.get():
+                messagebox.showerror("Register Failed", "User already exists.")
+        elif not re.match(pattern, password.get()):
+            messagebox.showerror("Register Failed", "Password is not strong enough. Please include: 8 Characters minimum, A capital letter, A small letter, A number, A symbol.")
+        elif re.match(pattern, password.get()):
+            password = password.get()
+            hashed_password, salt = self.password_hash(password)
+            facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?', (facility.get(), )).fetchall()
+            if facility_id_db == []: facility_id_db = [(0,)]
+            cursor.execute('INSERT INTO User (user_id, facility_id, first_name, last_name, hashed_password, salt, class_grade) VALUES (?, ?, ?, ?, ?, ?, ?)', (user_id.get(), facility_id_db[0][0], first_name.get(), last_name.get(), hashed_password, salt, class_grade.get()))
+            conn.commit()
+            messagebox.showinfo('Registration Successful', 'Please Login')
+            return True
+    
+    def password_hash(self, password):
+        import hashlib
+        import secrets
+        salt = secrets.token_bytes(16)
+        salted_password = password.encode('utf-8') + salt
+        hashed_password = hashlib.sha256(salted_password).hexdigest()
+        return hashed_password, salt
+
 class Student(User): 
     def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = '', grade = ''):
         super().__init__(first_name, last_name, user_id,  hashed_password, salt)
@@ -29,13 +86,10 @@ class Student(User):
                 self.start_time = f'{timing_format[:index - 1].strip()}:00'
                 self.end_time = f'{timing_format[index + 1:].strip()}:00'
         from datetime import datetime, timedelta
-        # Get today's date
         self.day = day.get()
         today = datetime.today()
         Day_num = {'Monday' : 0, 'Tuesday' : 1, 'Wednesday' : 2, 'Thursday' : 3, 'Friday' : 4}
-        # Calculate days until next Day
         days_delta = (Day_num[self.day] - today.weekday()) % 7
-        # Calculate the date of the Day
         self.date = (today + timedelta(days=days_delta)).strftime('%Y-%m-%d')
     
     def request(self, day, facility, timing, timings_available_combobox):
@@ -48,10 +102,10 @@ class Student(User):
         timing.set('')
         timings_available_combobox.config(state = 'disabled')
         messagebox.showinfo('Request Successful', f'Requested from {self.start_time} to {self.end_time} on {self.day} {self.date}')
-    
+
     def update_table(self):
-            cursor.execute('UPDATE Timeslot SET status = NULL WHERE timeslot_id = ?', (self.timeslot_id_db[0][0],))
-            conn.commit()
+        cursor.execute('UPDATE Timeslot SET status = NULL WHERE timeslot_id = ?', (self.timeslot_id_db[0][0],))
+        conn.commit()
 
 class Teacher(User):
     def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = '', facility = 0):
@@ -96,41 +150,10 @@ def remove_widgets():
         widget.destroy()
 
 def login_page():
-    #A nested function for the backend checks
+
     def login(Id, password):
-        #Gets the password and user id from the database of the user inputed
-        user_db = cursor.execute('SELECT * FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
-        #Checks if the user exists or not
-        if user_db == []:
-            messagebox.showerror("Login Failed", "User does not exist")
-        #Checks if the passwords match
-        elif password_check(user_db[0][4], Id, password):
-            messagebox.showinfo('Login Successful', f'Welcome, {user_db[0][2]} {user_db[0][3]}')
-            #Checks whether it is a student or teacher and shows them their respective home page.
-            if user_db[0][0][0] == 'S':
-                user = Student(user_db[0][2], user_db[0][3], user_db[0][0], user_db[0][4], user_db[0][5], user_db[0][6])
-                home_page(user)
-            else:
-                user = Teacher(user_db[0][2], user_db[0][3], user_db[0][0], user_db[0][4], user_db[0][5], user_db[0][1])
-                home_page(user)
-        else:
-            messagebox.showerror("Login Failed", "Incorrect username or password")
-
-    def password_check(hashed_password_db, Id, password):
-        import hashlib
-
-        # Retrieve Salt from database
-        salt = cursor.execute('SELECT salt FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
-
-        # Combine the password and salt
-        #password = password.get()
-        salted_password = password.get().encode('utf-8') + salt[0][0]
-
-        # Create a hashed password to check with the original using SHA256
-        hashed_password = hashlib.sha256(salted_password).hexdigest()
-
-        if hashed_password == hashed_password_db: return True
-        else: return False
+        user = User().login(Id, password)
+        if user != None: home_page(user)
 
     #Clear Page
     remove_widgets()
@@ -159,61 +182,11 @@ def login_page():
     main_frame.rowconfigure(0, weight = 1)
     main_frame_login.grid(row = 0, column = 0)
 
-def register_page():
-    #A nested function for the backend checks and registration
-    def register(user_id, password, first_name, last_name, class_grade, facility, facilities, facility_combobox, grade_class_combobox):
-        import re
-        state = facility_combobox['state'].string
-        state2 = grade_class_combobox['state'].string
-        #Password requirements
-        pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
-        #Gets user id from database and sets to a variable
-        cursor.execute('SELECT user_id FROM User WHERE user_id = ?', (user_id.get(),))
-        Id_db = cursor.fetchall()
-        #Checks whether all boxes are filled out.
-        if user_id.get() == '' or password.get() == '' or first_name.get() == '' or last_name.get() == '' or (class_grade.get() == '' and facility.get() == ''):
-            messagebox.showerror("Register Failed", "All fields must be filled out.")
-        #Checks whether the first value of the id inputed is an S or T.
-        elif user_id.get()[0] != 'S' and user_id.get()[0] != 'T':
-            messagebox.showerror("Register Failed", "ID can only start with S or T.")
-        #Checks if the the facility or student combobox is filled out when its not their roles respectively.
-        elif (user_id.get()[0] == 'S' and state == 'active') or (user_id.get()[0] == 'T' and state2 == 'active'):
-            messagebox.showerror("Register Failed", "Teacher or Student can not be responsible for a Class or Facility, Respectively.")
-        #Checks if the user is already registered.
-        elif Id_db != []:
-            if Id_db[0][0] == user_id.get():
-                messagebox.showerror("Register Failed", "User already exists.")
-        #Checks if the password matches the requirements
-        elif not re.match(pattern, password.get()):
-            messagebox.showerror("Register Failed", "Password is not strong enough. Please include: 8 Characters minimum, A capital letter, A small letter, A number, A symbol.")
-        #Hashes password
-        elif re.match(pattern, password.get()):
-            password = password.get()
-            hashed_password, salt = password_hash(password)
-            facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?', (facility.get(), )).fetchall()
-            if facility_id_db == []: facility_id_db = [(0,)]
-            cursor.execute('INSERT INTO User (user_id, facility_id, first_name, last_name, hashed_password, salt, class_grade) VALUES (?, ?, ?, ?, ?, ?, ?)', (user_id.get(), facility_id_db[0][0], first_name.get(), last_name.get(), hashed_password, salt, class_grade.get()))
-            conn.commit()
-            messagebox.showinfo('Registration Successful', 'Please Login')
-            login_page()
-    
-    #A nested function to hash the password the user inputted.
-    def password_hash(password):
-        import hashlib
-        import secrets
+def register_page(): 
 
-        # Generate a random salt
-        salt = secrets.token_bytes(16)
+    def register(user_id, password, first_name, last_name, class_grade, facility, facility_combobox, grade_class_combobox):
+        if User().register(user_id, password, first_name, last_name, class_grade, facility, facility_combobox, grade_class_combobox): login_page()
 
-        # Combine the password and salt
-        salted_password = password.encode('utf-8') + salt
-
-        # Create a hash using SHA256
-        hashed_password = hashlib.sha256(salted_password).hexdigest()
-
-        return hashed_password, salt
-    
-    #A nested function to enable and disable the repsective comboboxes of the users' choice
     def student_or_teacher():
         if class_facility_bool.get():
             facility_combobox.config(state='disabled')
@@ -261,7 +234,7 @@ def register_page():
     facility_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = facility, values = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite'))
     facility_combobox.pack()
 
-    ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility, facilities, facility_combobox, grade_class_combobox)).pack()
+    ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility, facility_combobox, grade_class_combobox)).pack()
     ttk.Button(main_frame, text = '<--- Login', command = lambda: login_page()).pack()
 
 def home_page(user):
@@ -298,6 +271,8 @@ def approval_request_page(user):
         timings_available_combobox.config(values = timings_available)
 
     def display_outgoing_approvals(user, outgoing_approval_frame):
+        for widget in outgoing_approval_frame.winfo_children():
+            widget.destroy()
         bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id 
                                     FROM Facility, Timeslot, Booking 
                                     WHERE Facility.facility_id = Booking.facility_id
@@ -338,8 +313,10 @@ def approval_request_page(user):
     timings_available_combobox.pack()
     ttk.Button(main_frame, text = 'Check Available Timings', command = lambda: display_timings_available(day, facility, timings_available_combobox)).pack()
     ttk.Button(main_frame, text = 'Request', command = lambda: user.request(day, facility, timing, timings_available_combobox)).pack()
-    ttk.Button(main_frame, text = 'Check outgoing approvals', command = lambda: display_outgoing_approvals(user, outgoing_approval_frame)).pack()
-    ttk.Button(main_frame, text = '<--- Home', command = lambda: home_page(user)).pack()
+    ttk.Button(main_frame, text = 'Refresh', command = lambda: display_outgoing_approvals(user, outgoing_approval_frame)).pack()
+    ttk.Button(main_frame, text = '<--- HOME', command = lambda: home_page(user)).pack()
+    #ttk.Button(main_frame, text = 'Refresh', command = lambda: refresh_window(outgoing_approval_frame)).pack()
+    display_outgoing_approvals(user, outgoing_approval_frame)
 
 if __name__ == '__main__':
     login_page()
