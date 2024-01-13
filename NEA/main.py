@@ -44,7 +44,6 @@ class User:
         state2 = grade_class_combobox['state'].string
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
         Id_db = cursor.execute('SELECT user_id FROM User WHERE user_id = ?', (user_id.get(),)).fetchall()
-
         if user_id.get() == '' or password.get() == '' or first_name.get() == '' or last_name.get() == '' or (class_grade.get() == '' and facility.get() == ''):
             messagebox.showerror("Register Failed", "All fields must be filled out.")
         elif user_id.get()[0] != 'S' and user_id.get()[0] != 'T':
@@ -61,6 +60,7 @@ class User:
             hashed_password, salt = self.password_hash(password)
             facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?', (facility.get(), )).fetchall()
             if facility_id_db == []: facility_id_db = [(0,)]
+            cursor.execute('INSERT INTO Card (tag_id) VALUES (?)', ('')
             cursor.execute('INSERT INTO User (user_id, facility_id, first_name, last_name, hashed_password, salt, class_grade) VALUES (?, ?, ?, ?, ?, ?, ?)', (user_id.get(), facility_id_db[0][0], first_name.get(), last_name.get(), hashed_password, salt, class_grade.get()))
             conn.commit()
             messagebox.showinfo('Registration Successful', 'Please Login')
@@ -144,6 +144,31 @@ class Outgoing_Approval_Segment(ttk.Frame):
                 self.outgoing_approvals.remove(approval)
                 del approval
 
+class Incoming_Approval_Segment(ttk.Frame):
+    def __init__(self, parent, incoming_approvals, booking):
+        super().__init__(master = parent)
+        self.incoming_approvals = incoming_approvals
+        self.booking = booking
+        self.rowconfigure(0, weight = 1)
+        self.columnconfigure((0, 1, 2, 3, 4, 5, 6, 7, 8, 9), weight = 1)
+        ttk.Label(self, text = self.booking[8], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 0)
+        ttk.Label(self, text = self.booking[9], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 1)
+        ttk.Label(self, text = self.booking[10], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 2)
+        ttk.Label(self, text = self.booking[1], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 3)
+        ttk.Label(self, text = self.booking[2], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 4)
+        ttk.Label(self, text = self.booking[3], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 5)
+        ttk.Label(self, text = self.booking[4], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 6)
+        ttk.Label(self, text = self.booking[5], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 7)
+        ttk.Button(self, text = 'Accept', command = lambda: self.remove_booking()).grid(row = 0, column = 8)
+        ttk.Button(self, text = 'Decline', command = lambda: self.remove_booking()).grid(row = 0, column = 9)
+
+    def accept_booking(self):
+        cursor.execute('UPDATE Timeslot SET status = TRUE, card_id = ?, WHERE timeslot_id = ?', (self.booking[7],))
+        cursor.execute('UPDATE Booking SET approved = TRUE WHERE booking_number = ?', (self.booking[0]))
+
+
+    #def decline_booking(self):
+
 def remove_widgets():
     #Removes every widget on the page by cyclying through them and destroying them
     for widget in window.winfo_children():
@@ -152,7 +177,7 @@ def remove_widgets():
 def login_page():
 
     def login(Id, password):
-        user = User().login(Id, password)
+        card, user = User().login(Id, password)
         if user != None: home_page(user)
 
     #Clear Page
@@ -253,7 +278,7 @@ def home_page(user):
     if user.user_id[0] == 'S':
         ttk.Button(main_frame, text = 'Approval Request', command = lambda: approval_request_page(user)).pack()
     else:
-        ttk.Button(main_frame, text = 'Approval Management', command = lambda: print('Approval Management Page')).pack()
+        ttk.Button(main_frame, text = 'Approval Management', command = lambda: approval_management_page(user)).pack()
 
 def approval_request_page(user): 
 
@@ -317,6 +342,38 @@ def approval_request_page(user):
     ttk.Button(main_frame, text = '<--- HOME', command = lambda: home_page(user)).pack()
     #ttk.Button(main_frame, text = 'Refresh', command = lambda: refresh_window(outgoing_approval_frame)).pack()
     display_outgoing_approvals(user, outgoing_approval_frame)
+
+def approval_management_page(user):
+
+    def display_incoming_approvals(user, incoming_approval_frame):
+        for widget in incoming_approval_frame.winfo_children():
+            widget.destroy()
+        bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id, User.first_name, User.last_name, User.class_grade, User.user_id
+                                    FROM Facility, Timeslot, Booking, User
+                                    WHERE Booking.facility_id = Facility.facility_id
+                                    AND Booking.facility_id = ?
+                                    AND Booking.timeslot_id = Timeslot.timeslot_id
+                                    AND User.user_id = Booking.user_id;''', (user.facility,)).fetchall()
+        incoming_approvals = []
+        for booking in bookings:
+            if booking[6] == None: status = 'Pending'
+            elif booking[6] == 1: status = 'Approved'
+            else: status = 'Declined'
+            approval = Incoming_Approval_Segment(incoming_approval_frame, incoming_approvals, booking)
+            incoming_approvals.append(approval)
+
+    #Clear Page
+    remove_widgets()
+
+    #Frames
+    main_frame = ttk.Frame(window, width = 900, height = 600)
+    main_frame.pack(expand = True, fill = 'both')
+    incoming_approval_frame = ttk.Frame(window, width = 900, height = 300, borderwidth = 10, relief = tk.GROOVE)
+    incoming_approval_frame.pack(expand = True, fill = 'both')
+
+    #Widgets
+    ttk.Label(main_frame, text = 'Approval Request').pack()
+    display_incoming_approvals(user, incoming_approval_frame)
 
 if __name__ == '__main__':
     login_page()
