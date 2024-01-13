@@ -20,10 +20,19 @@ cursor.execute('''
     );
 ''')
 
+#Card Table
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS Card (
+        card_id INTEGER PRIMARY KEY AUTOINCREMENT,
+        tag_id VARCHAR(12)
+    );
+''')
+
 #User Table
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS User (
         user_id VARCHAR(10),
+        card_id INTEGER,
         facility_id INTEGER,
         first_name VARCHAR(20),
         last_name VARCHAR(20),
@@ -31,6 +40,7 @@ cursor.execute('''
         salt VARCHAR(100),
         class_grade VARCHAR(3),
         PRIMARY KEY (user_id),
+        FOREIGN KEY (card_id) REFERENCES Card(card_id),
         FOREIGN KEY (facility_id) REFERENCES Facility(facility_id)
     );
 ''')
@@ -44,7 +54,9 @@ cursor.execute('''
         start_time TIME,
         end_time TIME,
         status BOOLEAN,
-        FOREIGN KEY (facility_id) REFERENCES Facility(facility_id)
+        card_id INTEGER,
+        FOREIGN KEY (facility_id) REFERENCES Facility(facility_id),
+        FOREIGN KEY (card_id) REFERENCES Card(card_id)
     );
 ''')
 
@@ -60,16 +72,6 @@ cursor.execute('''
         FOREIGN KEY (facility_id) REFERENCES Facility(facility_id),
         FOREIGN KEY (user_id) REFERENCES User(user_id),
         FOREIGN KEY (timeslot_id) REFERENCES User(timeslot_id)
-    );
-''')
-
-#Card Table
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS Card (
-        card_id INTEGER,
-        user_id VARCHAR(10),
-        PRIMARY KEY (card_id),
-        FOREIGN KEY (user_id) REFERENCES User(user_id)
     );
 ''')
 
@@ -105,13 +107,18 @@ for day in days:
     if day != 'Friday':
         for facility in facility_ids:
             for index in range(len(start_timings)):
-                cursor.execute('INSERT INTO Timeslot (day, facility_id, start_time, end_time, status) VALUES (?, ?, ?, ?, ?)', (day, facility, start_timings[index], end_timings[index], 0))
+                cursor.execute('INSERT INTO Timeslot (day, facility_id, start_time, end_time, status, card_id) VALUES (?, ?, ?, ?, ?, ?)', (day, facility, start_timings[index], end_timings[index], 0, None))
     else:
         for facility in facility_ids:
             for index in range(len(friday_start_timings)):
-                dude = friday_start_timings[index]
-                dude2 = friday_end_timings[index]
-                cursor.execute('INSERT INTO Timeslot (day, facility_id, start_time, end_time, status) VALUES (?, ?, ?, ?, ?)', (day, facility, friday_start_timings[index], friday_end_timings[index], 0))
+                cursor.execute('INSERT INTO Timeslot (day, facility_id, start_time, end_time, status, card_id) VALUES (?, ?, ?, ?, ?, ?)', (day, facility, friday_start_timings[index], friday_end_timings[index], 0, None))
+
+import random
+import string
+for i in range(0, 4):
+    letters = string.ascii_uppercase()
+    cursor.execute('INSERT INTO Card (tag_id) VALUES (?)', (f''))
+
 
 conn.commit()
 conn.close()
