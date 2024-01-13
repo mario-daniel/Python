@@ -115,10 +115,9 @@ for day in days:
 
 import random
 import string
-for i in range(0, 4):
-    letters = string.ascii_uppercase()
-    cursor.execute('INSERT INTO Card (tag_id) VALUES (?)', (f''))
-
+for i in range(0, 5):
+    letters = f'{string.ascii_uppercase}0123456789'
+    cursor.execute('INSERT INTO Card (tag_id) VALUES (?)', (f'{random.choice(letters)}{random.choice(letters)} {random.choice(letters)}{random.choice(letters)} {random.choice(letters)}{random.choice(letters)} {random.choice(letters)}{random.choice(letters)}',))
 
 conn.commit()
 conn.close()
