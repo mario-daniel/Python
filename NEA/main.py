@@ -19,23 +19,23 @@ class User:
 
     def login(self, Id, password):
         user_db = cursor.execute('SELECT * FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
+        tag_id_db = cursor.execute('SELECT Card.tag_id, Card.owner FROM Card, User WHERE User.user_id = ? AND User.card_id = Card.card_id;', (user_db[0][0],)).fetchall()
         if user_db == []:
             messagebox.showerror("Login Failed", "User does not exist")
-        elif self.password_check(user_db[0][4], Id, password):
-            messagebox.showinfo('Login Successful', f'Welcome, {user_db[0][2]} {user_db[0][3]}')
+        elif self.password_check(user_db, password):
+            messagebox.showinfo('Login Successful', f'Welcome, {user_db[0][3]} {user_db[0][4]}')
             if user_db[0][0][0] == 'S':
-                return Student(user_db[0][2], user_db[0][3], user_db[0][0], user_db[0][4], user_db[0][5], user_db[0][6])
+                return Card(user_db[0][1], tag_id_db[0][0], tag_id_db[0][1]), Student(user_db[0][3], user_db[0][4], user_db[0][0], user_db[0][5], user_db[0][6], user_db[0][7])
             else:
-                return Teacher(user_db[0][2], user_db[0][3], user_db[0][0], user_db[0][4], user_db[0][5], user_db[0][1])
+                return Card(user_db[0][1], tag_id_db[0][0], tag_id_db[0][1]), Teacher(user_db[0][3], user_db[0][4], user_db[0][0], user_db[0][5], user_db[0][6], user_db[0][2])
         else:
             messagebox.showerror("Login Failed", "Incorrect username or password")
 
-    def password_check(self, hashed_password_db, Id, password):
+    def password_check(self, user_db, password):
         import hashlib
-        salt = cursor.execute('SELECT salt FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
-        salted_password = password.get().encode('utf-8') + salt[0][0]
+        salted_password = password.get().encode('utf-8') + user_db[0][6]
         hashed_password = hashlib.sha256(salted_password).hexdigest()
-        if hashed_password == hashed_password_db: return True
+        if hashed_password == user_db[0][5]: return True
         else: return False
 
     def register(self, user_id, password, first_name, last_name, class_grade, facility, facility_combobox, grade_class_combobox):
@@ -60,8 +60,12 @@ class User:
             hashed_password, salt = self.password_hash(password)
             facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?', (facility.get(), )).fetchall()
             if facility_id_db == []: facility_id_db = [(0,)]
-            cursor.execute('INSERT INTO Card (tag_id) VALUES (?)', ('')
-            cursor.execute('INSERT INTO User (user_id, facility_id, first_name, last_name, hashed_password, salt, class_grade) VALUES (?, ?, ?, ?, ?, ?, ?)', (user_id.get(), facility_id_db[0][0], first_name.get(), last_name.get(), hashed_password, salt, class_grade.get()))
+            card = cursor.execute('SELECT card_id FROM Card WHERE owner IS NULL LIMIT 1;').fetchall()
+            if state == 'active':
+                cursor.execute('UPDATE Card SET owner = "T" WHERE card_id = ?;', (card[0][0],))
+            else:
+                cursor.execute('UPDATE Card SET owner = "S" WHERE card_id = ?;', (card[0][0],))
+            cursor.execute('INSERT INTO User (user_id, card_id, facility_id, first_name, last_name, hashed_password, salt, class_grade) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (user_id.get(), card[0][0], facility_id_db[0][0], first_name.get(), last_name.get(), hashed_password, salt, class_grade.get()))
             conn.commit()
             messagebox.showinfo('Registration Successful', 'Please Login')
             return True
@@ -113,40 +117,42 @@ class Teacher(User):
         self.facility = facility
 
 class Card:
-    def __init__(self, card_id = 0):
+    def __init__(self, card_id = 0, tag_id = '', owner = ''):
         self.card_id = card_id
+        self.tag_id = tag_id
+        self.owner = owner
 
 class Outgoing_Approval_Segment(ttk.Frame):
-    def __init__(self, parent, booking_number, facility, start_time, end_time, day, date, status, timeslot_id, outgoing_approvals):
+    def __init__(self, parent, booking, status, outgoing_approvals):
         super().__init__(master = parent)
-        self.booking_number = booking_number
-        self.timeslot_id = timeslot_id
+        self.booking = booking
         self.outgoing_approvals = outgoing_approvals
         self.rowconfigure(0, weight = 1)
         self.columnconfigure((0, 1, 2, 3, 4, 5, 6), weight = 1)
-        ttk.Label(self, text = facility, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 0)
-        ttk.Label(self, text = start_time, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 1)
-        ttk.Label(self, text = end_time, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 2)
-        ttk.Label(self, text = day, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 3)
-        ttk.Label(self, text = date, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 4)
+        ttk.Label(self, text = self.booking[1], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 0)
+        ttk.Label(self, text = self.booking[2], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 1)
+        ttk.Label(self, text = self.booking[3], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 2)
+        ttk.Label(self, text = self.booking[4], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 3)
+        ttk.Label(self, text = self.booking[5], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 4)
         ttk.Label(self, text = status, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 5)
         ttk.Button(self, text = 'Remove', command = lambda: self.remove_booking()).grid(row = 0, column = 6)
         self.pack()
     
     def remove_booking(self):
-        cursor.execute('UPDATE Timeslot SET status = FALSE WHERE timeslot_id = ?', (self.timeslot_id,))
-        cursor.execute('DELETE FROM Booking WHERE booking_number = ?', (self.booking_number,))
+        cursor.execute('UPDATE Timeslot SET status = FALSE WHERE timeslot_id = ?', (self.booking[7],))
+        cursor.execute('DELETE FROM Booking WHERE booking_number = ?', (self.booking[0],))
         conn.commit()
         for approval in self.outgoing_approvals: 
-            if approval.booking_number == self.booking_number:
+            if approval.booking[0] == self.booking[0]:
                 for widget in approval.winfo_children():
                     widget.destroy()
                 self.outgoing_approvals.remove(approval)
                 del approval
 
 class Incoming_Approval_Segment(ttk.Frame):
-    def __init__(self, parent, incoming_approvals, booking):
+    def __init__(self, parent, incoming_approvals, booking, card):
         super().__init__(master = parent)
+        self.card = card
         self.incoming_approvals = incoming_approvals
         self.booking = booking
         self.rowconfigure(0, weight = 1)
@@ -159,15 +165,32 @@ class Incoming_Approval_Segment(ttk.Frame):
         ttk.Label(self, text = self.booking[3], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 5)
         ttk.Label(self, text = self.booking[4], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 6)
         ttk.Label(self, text = self.booking[5], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 7)
-        ttk.Button(self, text = 'Accept', command = lambda: self.remove_booking()).grid(row = 0, column = 8)
-        ttk.Button(self, text = 'Decline', command = lambda: self.remove_booking()).grid(row = 0, column = 9)
+        ttk.Button(self, text = 'Accept', command = lambda: self.accept_booking()).grid(row = 0, column = 8)
+        ttk.Button(self, text = 'Decline', command = lambda: self.decline_booking()).grid(row = 0, column = 9)
+        self.pack()
 
     def accept_booking(self):
-        cursor.execute('UPDATE Timeslot SET status = TRUE, card_id = ?, WHERE timeslot_id = ?', (self.booking[7],))
-        cursor.execute('UPDATE Booking SET approved = TRUE WHERE booking_number = ?', (self.booking[0]))
+        card_id_db = cursor.execute('SELECT card_id FROM User WHERE user_id = ?', (self.booking[11],)).fetchall()
+        cursor.execute('UPDATE Timeslot SET status = TRUE, card_id = ? WHERE timeslot_id = ?', (card_id_db[0][0], self.booking[7]))
+        cursor.execute('UPDATE Booking SET approved = TRUE WHERE booking_number = ?', (self.booking[0],))
+        conn.commit()
+        for approval in self.incoming_approvals: 
+            if approval.booking[0] == self.booking[0]:
+                for widget in approval.winfo_children():
+                    widget.destroy()
+                self.incoming_approvals.remove(approval)
+                del approval
 
-
-    #def decline_booking(self):
+    def decline_booking(self):
+        cursor.execute('UPDATE Timeslot SET status = FALSE WHERE timeslot_id = ?', (self.card.card_id,))
+        cursor.execute('UPDATE Booking SET approved = FALSE WHERE booking_number = ?', (self.booking[0]))
+        conn.commit()
+        for approval in self.incoming_approvals: 
+            if approval.booking[0] == self.booking[0]:
+                for widget in approval.winfo_children():
+                    widget.destroy()
+                self.incoming_approvals.remove(approval)
+                del approval
 
 def remove_widgets():
     #Removes every widget on the page by cyclying through them and destroying them
@@ -178,7 +201,7 @@ def login_page():
 
     def login(Id, password):
         card, user = User().login(Id, password)
-        if user != None: home_page(user)
+        if user != None: home_page(user, card)
 
     #Clear Page
     remove_widgets()
@@ -262,7 +285,7 @@ def register_page():
     ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility, facility_combobox, grade_class_combobox)).pack()
     ttk.Button(main_frame, text = '<--- Login', command = lambda: login_page()).pack()
 
-def home_page(user):
+def home_page(user, card):
     #Clear Page
     remove_widgets()
     
@@ -276,11 +299,11 @@ def home_page(user):
     ttk.Button(main_frame, text = 'Analytics', command = lambda: print('Analytics Page')).pack()
 
     if user.user_id[0] == 'S':
-        ttk.Button(main_frame, text = 'Approval Request', command = lambda: approval_request_page(user)).pack()
+        ttk.Button(main_frame, text = 'Approval Request', command = lambda: approval_request_page(user, card)).pack()
     else:
-        ttk.Button(main_frame, text = 'Approval Management', command = lambda: approval_management_page(user)).pack()
+        ttk.Button(main_frame, text = 'Approval Management', command = lambda: approval_management_page(user, card)).pack()
 
-def approval_request_page(user): 
+def approval_request_page(user, card): 
 
     def display_timings_available(day, facility, timings_available_combobox):
         timings_available = []
@@ -308,7 +331,7 @@ def approval_request_page(user):
             if booking[6] == None: status = 'Pending'
             elif booking[6] == 1: status = 'Approved'
             else: status = 'Declined'
-            approval = Outgoing_Approval_Segment(outgoing_approval_frame, booking[0], booking[1], booking[2], booking[3], booking[4], booking[5], status, booking[7], outgoing_approvals)
+            approval = Outgoing_Approval_Segment(outgoing_approval_frame, booking, status, outgoing_approvals)
             outgoing_approvals.append(approval)
 
     #Clear Page
@@ -339,18 +362,19 @@ def approval_request_page(user):
     ttk.Button(main_frame, text = 'Check Available Timings', command = lambda: display_timings_available(day, facility, timings_available_combobox)).pack()
     ttk.Button(main_frame, text = 'Request', command = lambda: user.request(day, facility, timing, timings_available_combobox)).pack()
     ttk.Button(main_frame, text = 'Refresh', command = lambda: display_outgoing_approvals(user, outgoing_approval_frame)).pack()
-    ttk.Button(main_frame, text = '<--- HOME', command = lambda: home_page(user)).pack()
+    ttk.Button(main_frame, text = '<--- HOME', command = lambda: home_page(user, card)).pack()
     #ttk.Button(main_frame, text = 'Refresh', command = lambda: refresh_window(outgoing_approval_frame)).pack()
     display_outgoing_approvals(user, outgoing_approval_frame)
 
-def approval_management_page(user):
+def approval_management_page(user, card):
 
-    def display_incoming_approvals(user, incoming_approval_frame):
+    def display_incoming_approvals(user, incoming_approval_frame, card):
         for widget in incoming_approval_frame.winfo_children():
             widget.destroy()
         bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id, User.first_name, User.last_name, User.class_grade, User.user_id
                                     FROM Facility, Timeslot, Booking, User
                                     WHERE Booking.facility_id = Facility.facility_id
+                                    AND Booking.approved IS NULL
                                     AND Booking.facility_id = ?
                                     AND Booking.timeslot_id = Timeslot.timeslot_id
                                     AND User.user_id = Booking.user_id;''', (user.facility,)).fetchall()
@@ -359,7 +383,7 @@ def approval_management_page(user):
             if booking[6] == None: status = 'Pending'
             elif booking[6] == 1: status = 'Approved'
             else: status = 'Declined'
-            approval = Incoming_Approval_Segment(incoming_approval_frame, incoming_approvals, booking)
+            approval = Incoming_Approval_Segment(incoming_approval_frame, incoming_approvals, booking, card)
             incoming_approvals.append(approval)
 
     #Clear Page
@@ -373,7 +397,7 @@ def approval_management_page(user):
 
     #Widgets
     ttk.Label(main_frame, text = 'Approval Request').pack()
-    display_incoming_approvals(user, incoming_approval_frame)
+    display_incoming_approvals(user, incoming_approval_frame, card)
 
 if __name__ == '__main__':
     login_page()
