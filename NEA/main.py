@@ -19,10 +19,10 @@ class User:
 
     def login(self, Id, password):
         user_db = cursor.execute('SELECT * FROM User WHERE user_id = ?', (Id.get(),)).fetchall()
-        tag_id_db = cursor.execute('SELECT Card.tag_id, Card.owner FROM Card, User WHERE User.user_id = ? AND User.card_id = Card.card_id;', (user_db[0][0],)).fetchall()
         if user_db == []:
             messagebox.showerror("Login Failed", "User does not exist")
         elif self.password_check(user_db, password):
+            tag_id_db = cursor.execute('SELECT Card.tag_id, Card.owner FROM Card, User WHERE User.user_id = ? AND User.card_id = Card.card_id;', (user_db[0][0],)).fetchall()
             messagebox.showinfo('Login Successful', f'Welcome, {user_db[0][3]} {user_db[0][4]}')
             if user_db[0][0][0] == 'S':
                 return Card(user_db[0][1], tag_id_db[0][0], tag_id_db[0][1]), Student(user_db[0][3], user_db[0][4], user_db[0][0], user_db[0][5], user_db[0][6], user_db[0][7])
@@ -295,13 +295,13 @@ def home_page(user, card):
 
     #Widgets
     ttk.Button(main_frame, text = 'Profile', command = lambda: print('Profile Page')).pack()
-    ttk.Button(main_frame, text = 'Bookings', command = lambda: print('Bookings Page')).pack()
-    ttk.Button(main_frame, text = 'Analytics', command = lambda: print('Analytics Page')).pack()
 
     if user.user_id[0] == 'S':
-        ttk.Button(main_frame, text = 'Approval Request', command = lambda: approval_request_page(user, card)).pack()
+        ttk.Button(main_frame, text = 'Approval Request and Outgoing Approvals', command = lambda: approval_request_page(user, card)).pack()
+        ttk.Button(main_frame, text = 'My Analytics', command = lambda: print('My Analytics Page')).pack()
     else:
         ttk.Button(main_frame, text = 'Approval Management', command = lambda: approval_management_page(user, card)).pack()
+        ttk.Button(main_frame, text = 'School Analytics', command = lambda: print('Analytics Page')).pack()
 
 def approval_request_page(user, card): 
 
