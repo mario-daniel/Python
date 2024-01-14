@@ -24,7 +24,8 @@ cursor.execute('''
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS Card (
         card_id INTEGER PRIMARY KEY AUTOINCREMENT,
-        tag_id VARCHAR(12)
+        tag_id VARCHAR(12),
+        owner CHAR(1)
     );
 ''')
 
