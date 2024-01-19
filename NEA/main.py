@@ -111,6 +111,9 @@ class Student(User):
         cursor.execute('UPDATE Timeslot SET status = NULL WHERE timeslot_id = ?', (self.timeslot_id_db[0][0],))
         conn.commit()
 
+    def request_problem(self, other_problem):
+        print(f'Problem requested: {other_problem}')
+
 class Teacher(User):
     def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = '', facility = 0):
         super().__init__(first_name, last_name, user_id,  hashed_password, salt)
@@ -211,7 +214,7 @@ def login_page():
     password = tk.StringVar()
 
     # main_frames
-    main_frame = ttk.Frame(window, width = 864, height = 576)
+    main_frame = ttk.Frame(window, width = 900, height = 600)
     main_frame.pack(expand = True, fill = 'both')
     main_frame_login = ttk.Frame(main_frame)
 
@@ -258,7 +261,7 @@ def register_page():
     classes = ('9A', '9B', '9C', '9D', '10A', '10B', '10C', '10D', '11A', '11B', '11C', '11D', '12A', '12B', '12C', '12D', '13A', '13B', '13C', '13D')
 
     #Frames
-    main_frame = ttk.Frame(window, width = 864, height = 576)
+    main_frame = ttk.Frame(window, width = 900, height = 600)
     main_frame.pack(expand = True, fill = 'both')
 
     #Widgets
@@ -290,16 +293,18 @@ def home_page(user, card):
     remove_widgets()
     
     #Frames
-    main_frame = ttk.Frame(window, width = 864, height = 576)
+    main_frame = ttk.Frame(window, width = 900, height = 600)
     main_frame.pack(expand = True, fill = 'both')
 
     #Widgets
     ttk.Button(main_frame, text = 'Profile', command = lambda: print('Profile Page')).pack()
 
     if user.user_id[0] == 'S':
+        ttk.Button(main_frame, text = 'Booking History and Support', command = lambda: booking_history_support(user)).pack()
         ttk.Button(main_frame, text = 'Approval Request and Outgoing Approvals', command = lambda: approval_request_page(user, card)).pack()
         ttk.Button(main_frame, text = 'My Analytics', command = lambda: print('My Analytics Page')).pack()
     else:
+        ttk.Button(main_frame, text = 'Response History', command = lambda: print('Response History')).pack()
         ttk.Button(main_frame, text = 'Approval Management', command = lambda: approval_management_page(user, card)).pack()
         ttk.Button(main_frame, text = 'School Analytics', command = lambda: print('Analytics Page')).pack()
 
@@ -398,6 +403,35 @@ def approval_management_page(user, card):
     #Widgets
     ttk.Label(main_frame, text = 'Approval Request').pack()
     display_incoming_approvals(user, incoming_approval_frame, card)
+
+def booking_history_support(user):
+    #Clear Page
+    remove_widgets()
+
+    #Variables
+    problem_string = tk.StringVar() 
+    problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard', 'Other']
+
+    #Frames
+    main_frame = ttk.Frame(window, width = 900, height = 600)
+    main_frame.pack(expand = True, fill = 'both')
+
+    #Widgets
+    ttk.Label(main_frame, text = 'Request Problem').pack()
+    problem_combobox = ttk.Combobox(main_frame, textvariable = problem_string, values = problems)
+    problem_combobox.pack()
+    text_box = tk.Text(main_frame, state = 'disabled')
+    text_box.pack()
+    other_problem = text_box.get(1.0, "end-1c")
+    submit_button = ttk.Button(main_frame, text = 'Submit', state = 'disabled', command = lambda: user.request_problem(other_problem))
+    submit_button.pack()
+    probkem = problem_combobox['textvariable']
+    if problem_string.get() != '':
+        submit_button.config(state = 'active')
+        if problem_string.get() == 'Other':
+            text_box.config(state = 'active')
+        else:
+            text_box.config(state = 'disabled')
 
 if __name__ == '__main__':
     login_page()
