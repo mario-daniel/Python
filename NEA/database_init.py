@@ -9,6 +9,8 @@ cursor.execute("DROP TABLE IF EXISTS Booking;")
 cursor.execute("DROP TABLE IF EXISTS Timeslot;")
 cursor.execute("DROP TABLE IF EXISTS Card;")
 cursor.execute("DROP TABLE IF EXISTS Swipe;")
+cursor.execute("DROP TABLE IF EXISTS Issue;")
+cursor.execute("DROP TABLE IF EXISTS IssueRequest;")
 
 #Facility Table
 cursor.execute('''
@@ -90,12 +92,42 @@ cursor.execute('''
     );
 ''')
 
+#Issue Table
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS Issue (
+        issue_id INTEGER,
+        issue VARCHAR(30),
+        other_issue BOOLEAN,
+        PRIMARY KEY (issue_id)
+    );
+''')
+
+#Issue Request Table
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS IssueRequest (
+        issue_number INTEGER PRIMARY KEY AUTOINCREMENT,
+        issue_id VARCHAR(30),
+        facility_id BOOLEAN,
+        other_issue_reason VARCHAR(200),
+        resolved BOOLEAN,
+        FOREIGN KEY (issue_id) REFERENCES Issue(issue_id),
+        FOREIGN KEY (facility_id) REFERENCES Facility(facility_id)
+    );
+''')
+
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (1, 'Football', 1))
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (2, 'Sixth Form Room', 0))
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (3, 'Basketball', 1))
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (4, 'Crickt', 1))
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (5, 'Multi-Purpose Hall', 1))
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (6, 'Fitness Suite', 1))
+
+cursor.execute('INSERT INTO Issue VALUES (?, ?, ?)', (1, 'Other', 1))
+cursor.execute('INSERT INTO Issue VALUES (?, ?, ?)', (2, 'Facility Damage', 0))
+cursor.execute('INSERT INTO Issue VALUES (?, ?, ?)', (3, 'Facility Resources Empty', 0))
+cursor.execute('INSERT INTO Issue VALUES (?, ?, ?)', (4, 'Theft of Facility Equipment', 0))
+cursor.execute('INSERT INTO Issue VALUES (?, ?, ?)', (5, 'Health Hazard', 0))
+
 
 days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
 start_timings = ['07:40:00', '08:25:00', '09:10:00', '09:55:00', '10:15:00', '11:00:00', '11:45:00', '12:30:00', '13:10:00', '13:55:00']
