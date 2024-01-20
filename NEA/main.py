@@ -111,8 +111,11 @@ class Student(User):
         cursor.execute('UPDATE Timeslot SET status = NULL WHERE timeslot_id = ?', (self.timeslot_id_db[0][0],))
         conn.commit()
 
-    def request_problem(self, other_problem):
-        print(f'Problem requested: {other_problem}')
+    def request_problem(self, other_problem, problem, problem_combobox, text_box):
+        problem_state = problem_combobox['state'].string
+        text_state = text_box['state'].string
+        if problem_state == 'active':
+            cursor.execute()
 
 class Teacher(User):
     def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = '', facility = 0):
@@ -240,11 +243,11 @@ def register_page():
 
     def student_or_teacher():
         if class_facility_bool.get():
-            facility_combobox.config(state='disabled')
-            grade_class_combobox.config(state='active')
+            facility_combobox.config(state = 'disabled')
+            grade_class_combobox.config(state = 'active')
         else:
-            grade_class_combobox.config(state='disabled')
-            facility_combobox.config(state='active')
+            grade_class_combobox.config(state = 'disabled')
+            facility_combobox.config(state = 'active')
 
     #Clear Page
     remove_widgets()
@@ -282,7 +285,7 @@ def register_page():
     grade_class_combobox.pack()
 
     ttk.Label(main_frame, text = 'Choose Facility').pack()
-    facility_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = facility, values = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite'))
+    facility_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = facility, values = facilities)
     facility_combobox.pack()
 
     ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility, facility_combobox, grade_class_combobox)).pack()
@@ -405,33 +408,46 @@ def approval_management_page(user, card):
     display_incoming_approvals(user, incoming_approval_frame, card)
 
 def booking_history_support(user):
+
+    def choose_or_other():
+        if other_bool.get():
+            text_box.config(state = 'normal')
+            problem_combobox.config(state = 'disabled')
+        else:
+            text_box.config(state = 'disabled')
+            problem_combobox.config(state = 'active')
+
     #Clear Page
     remove_widgets()
 
     #Variables
-    problem_string = tk.StringVar() 
-    problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard', 'Other']
+    problem = tk.StringVar() 
+    other_bool = tk.BooleanVar()
+    problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard']
 
     #Frames
     main_frame = ttk.Frame(window, width = 900, height = 600)
     main_frame.pack(expand = True, fill = 'both')
+    selection_frame = ttk.Frame(main_frame)
+
+    #Grid
+    selection_frame.rowconfigure(0, weight = 1)
+    selection_frame.columnconfigure((0, 1), weight = 1)    
 
     #Widgets
     ttk.Label(main_frame, text = 'Request Problem').pack()
-    problem_combobox = ttk.Combobox(main_frame, textvariable = problem_string, values = problems)
-    problem_combobox.pack()
+    selection_frame.pack()
+    problem_radiobutton = ttk.Radiobutton(selection_frame, value = False, variable = other_bool, command = lambda: choose_or_other())
+    problem_radiobutton.grid(row = 0, column = 0)
+    problem_combobox = ttk.Combobox(selection_frame, textvariable = problem, values = problems)
+    problem_combobox.grid(row = 0, column = 1)
+    other_radiobutton = ttk.Radiobutton(main_frame, text = 'Other', value = True, variable = other_bool, command = lambda: choose_or_other())
+    other_radiobutton.pack()
     text_box = tk.Text(main_frame, state = 'disabled')
     text_box.pack()
     other_problem = text_box.get(1.0, "end-1c")
-    submit_button = ttk.Button(main_frame, text = 'Submit', state = 'disabled', command = lambda: user.request_problem(other_problem))
+    submit_button = ttk.Button(main_frame, text = 'Submit', command = lambda: user.request_problem(other_problem, problem))
     submit_button.pack()
-    probkem = problem_combobox['textvariable']
-    if problem_string.get() != '':
-        submit_button.config(state = 'active')
-        if problem_string.get() == 'Other':
-            text_box.config(state = 'active')
-        else:
-            text_box.config(state = 'disabled')
 
 if __name__ == '__main__':
     login_page()
