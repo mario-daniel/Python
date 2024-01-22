@@ -111,11 +111,22 @@ class Student(User):
         cursor.execute('UPDATE Timeslot SET status = NULL WHERE timeslot_id = ?', (self.timeslot_id_db[0][0],))
         conn.commit()
 
-    def request_problem(self, other_problem, problem, problem_combobox, text_box):
-        problem_state = problem_combobox['state'].string
-        text_state = text_box['state'].string
-        if problem_state == 'active':
-            cursor.execute()
+    def request_problem(self, text_box, problem, problem_combobox, facility):
+        other_problem = text_box.get(1.0, "end-1c")
+        if facility.get() != '' or other_problem != '':
+            problem_state = problem_combobox['state'].string
+            facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?;', (facility.get(),)).fetchall()
+            if problem_state == 'normal':
+                issue_id_db = cursor.execute('SELECT issue_id FROM Issue WHERE issue = ?;', (problem.get(),)).fetchall()
+                cursor.execute('INSERT INTO IssueRequest (issue_id, facility_id, resolved) VALUES (?, ?, FALSE);', (issue_id_db[0][0], facility_id_db[0][0]))
+                conn.commit()
+                
+            else:
+                cursor.execute('INSERT INTO IssueRequest (issue_id, facility_id, other_issue_reason, resolved) VALUES (0, ?, ?, FALSE);', (facility_id_db[0][0], other_problem))
+                conn.commit()
+            messagebox.showinfo('Request Successful', 'Your issue will be fixed.')
+        else:
+            messagebox.showerror("Request Failed", "All fields must be filled out.")
 
 class Teacher(User):
     def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = '', facility = 0):
@@ -252,7 +263,7 @@ def register_page():
     #Clear Page
     remove_widgets()
 
-    #Vairables
+    #Variables
     user_id = tk.StringVar()
     password = tk.StringVar()
     first_name = tk.StringVar()
@@ -267,26 +278,30 @@ def register_page():
     main_frame = ttk.Frame(window, width = 900, height = 600)
     main_frame.pack(expand = True, fill = 'both')
 
-    #Widgets
-    ttk.Radiobutton(main_frame, text = 'Student', variable = class_facility_bool, value = True, command = student_or_teacher).pack()
-    ttk.Radiobutton(main_frame, text = 'Teacher', variable = class_facility_bool, value = False, command = student_or_teacher).pack()
+    #Grid
+    main_frame.rowconfigure((0, 1, 2, 3, 4, 5), weight = 1)
+    main_frame.columnconfigure((0, 1), weight = 1)
 
-    ttk.Label(main_frame, text = 'Enter User ID').pack()
-    ttk.Entry(main_frame, textvariable = user_id).pack()
-    ttk.Label(main_frame, text = 'Enter Password').pack()
-    ttk.Entry(main_frame, textvariable = password).pack()
-    ttk.Label(main_frame, text = 'Enter First Name').pack()
-    ttk.Entry(main_frame, textvariable = first_name).pack()
-    ttk.Label(main_frame, text = 'Enter Last Name').pack()
-    ttk.Entry(main_frame, textvariable = last_name).pack()
+    #Widgets
+    ttk.Radiobutton(main_frame, text = 'Student', variable = class_facility_bool, value = True, command = student_or_teacher).grid(row = 0, column = 0)
+    ttk.Radiobutton(main_frame, text = 'Teacher', variable = class_facility_bool, value = False, command = student_or_teacher).grid(row = 0, column = 1)
+
+    ttk.Label(main_frame, text = 'Enter User ID:').grid(row = 1, column = 0)
+    ttk.Entry(main_frame, textvariable = user_id).pack(row = 1, column = 1)
+    ttk.Label(main_frame, text = 'Enter Password:').pack(row = 2, column = 0)
+    ttk.Entry(main_frame, textvariable = password).pack(row = 2, column = 1)
+    ttk.Label(main_frame, text = 'Enter First Name:').pack(row = 3, column = 0)
+    ttk.Entry(main_frame, textvariable = first_name).pack(row = 3, column = 1)
+    ttk.Label(main_frame, text = 'Enter Last Name:').pack(row = 4, column = 0)
+    ttk.Entry(main_frame, textvariable = last_name).pack(row = 4, column = 1)
 
     ttk.Label(main_frame, text = 'Choose Class').pack()
     grade_class_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = class_grade, values = classes)
-    grade_class_combobox.pack()
+    grade_class_combobox.grid(row = 5, column = 0)
 
     ttk.Label(main_frame, text = 'Choose Facility').pack()
     facility_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = facility, values = facilities)
-    facility_combobox.pack()
+    facility_combobox.grid(row = 5, column = 1)
 
     ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility, facility_combobox, grade_class_combobox)).pack()
     ttk.Button(main_frame, text = '<--- Login', command = lambda: login_page()).pack()
@@ -354,7 +369,7 @@ def approval_request_page(user, card):
     #Frames
     main_frame = ttk.Frame(window, width = 900, height = 600)
     main_frame.pack(expand = True, fill = 'both')
-    outgoing_approval_frame = ttk.Frame(window, width = 900, height = 300, borderwidth = 10, relief = tk.GROOVE)
+    outgoing_approval_frame = ttk.Frame(window, borderwidth = 10, relief = tk.GROOVE)
     outgoing_approval_frame.pack(expand = True, fill = 'both')
 
     #Widgets
@@ -421,9 +436,12 @@ def booking_history_support(user):
     remove_widgets()
 
     #Variables
-    problem = tk.StringVar() 
+    problem = tk.StringVar()
+    facility = tk.StringVar()
     other_bool = tk.BooleanVar()
     problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard']
+    facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
+
 
     #Frames
     main_frame = ttk.Frame(window, width = 900, height = 600)
@@ -436,6 +454,7 @@ def booking_history_support(user):
 
     #Widgets
     ttk.Label(main_frame, text = 'Request Problem').pack()
+    ttk.Combobox(main_frame, textvariable = facility, values = facilities).pack()
     selection_frame.pack()
     problem_radiobutton = ttk.Radiobutton(selection_frame, value = False, variable = other_bool, command = lambda: choose_or_other())
     problem_radiobutton.grid(row = 0, column = 0)
@@ -445,8 +464,7 @@ def booking_history_support(user):
     other_radiobutton.pack()
     text_box = tk.Text(main_frame, state = 'disabled')
     text_box.pack()
-    other_problem = text_box.get(1.0, "end-1c")
-    submit_button = ttk.Button(main_frame, text = 'Submit', command = lambda: user.request_problem(other_problem, problem))
+    submit_button = ttk.Button(main_frame, text = 'Submit', command = lambda: user.request_problem(text_box, problem, problem_combobox, facility))
     submit_button.pack()
 
 if __name__ == '__main__':
