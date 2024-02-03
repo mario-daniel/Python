@@ -287,13 +287,13 @@ def register_page():
     ttk.Radiobutton(main_frame, text = 'Teacher', variable = class_facility_bool, value = False, command = student_or_teacher).grid(row = 0, column = 1)
 
     ttk.Label(main_frame, text = 'Enter User ID:').grid(row = 1, column = 0)
-    ttk.Entry(main_frame, textvariable = user_id).pack(row = 1, column = 1)
-    ttk.Label(main_frame, text = 'Enter Password:').pack(row = 2, column = 0)
-    ttk.Entry(main_frame, textvariable = password).pack(row = 2, column = 1)
-    ttk.Label(main_frame, text = 'Enter First Name:').pack(row = 3, column = 0)
-    ttk.Entry(main_frame, textvariable = first_name).pack(row = 3, column = 1)
-    ttk.Label(main_frame, text = 'Enter Last Name:').pack(row = 4, column = 0)
-    ttk.Entry(main_frame, textvariable = last_name).pack(row = 4, column = 1)
+    ttk.Entry(main_frame, textvariable = user_id).grid(row = 1, column = 1)
+    ttk.Label(main_frame, text = 'Enter Password:').grid(row = 2, column = 0)
+    ttk.Entry(main_frame, textvariable = password).grid(row = 2, column = 1)
+    ttk.Label(main_frame, text = 'Enter First Name:').grid(row = 3, column = 0)
+    ttk.Entry(main_frame, textvariable = first_name).grid(row = 3, column = 1)
+    ttk.Label(main_frame, text = 'Enter Last Name:').grid(row = 4, column = 0)
+    ttk.Entry(main_frame, textvariable = last_name).grid(row = 4, column = 1)
 
     ttk.Label(main_frame, text = 'Choose Class').pack()
     grade_class_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = class_grade, values = classes)
@@ -468,5 +468,7 @@ def booking_history_support(user):
     submit_button.pack()
 
 if __name__ == '__main__':
+    from database_init import main
+    main()
     login_page()
     window.mainloop()
