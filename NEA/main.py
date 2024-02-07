@@ -255,10 +255,10 @@ def register_page():
     def student_or_teacher():
         if class_facility_bool.get():
             facility_combobox.config(state = 'disabled')
-            grade_class_combobox.config(state = 'active')
+            grade_class_combobox.config(state = 'readonly')
         else:
             grade_class_combobox.config(state = 'disabled')
-            facility_combobox.config(state = 'active')
+            facility_combobox.config(state = 'readonly')
 
     #Clear Page
     remove_widgets()
@@ -276,32 +276,34 @@ def register_page():
 
     #Frames
     main_frame = ttk.Frame(window, width = 900, height = 600)
-    main_frame.pack(expand = True, fill = 'both')
+    main_frame.pack()
+    login_frame = tk.Frame()
+    login_frame.place( anchor = 'center', relx = 0.5, rely = 0.5)
 
     #Grid
-    main_frame.rowconfigure((0, 1, 2, 3, 4, 5), weight = 1)
-    main_frame.columnconfigure((0, 1), weight = 1)
+    login_frame.rowconfigure((0, 1, 2, 3, 4, 5, 6), weight = 1)
+    login_frame.columnconfigure((0, 1), weight = 1)
 
     #Widgets
-    ttk.Radiobutton(main_frame, text = 'Student', variable = class_facility_bool, value = True, command = student_or_teacher).grid(row = 0, column = 0)
-    ttk.Radiobutton(main_frame, text = 'Teacher', variable = class_facility_bool, value = False, command = student_or_teacher).grid(row = 0, column = 1)
+    ttk.Label(login_frame, text = 'First Name').grid(column = 0, row = 0)
+    ttk.Entry(login_frame, textvariable = first_name).grid(column = 0, row = 1)
+    ttk.Label(login_frame, text = 'Last Name').grid(column = 1, row = 0)
+    ttk.Entry(login_frame, textvariable = last_name).grid(column = 1, row = 1)
+    ttk.Label(login_frame, text = 'User ID').grid(column = 0, row = 2)
+    ttk.Entry(login_frame, textvariable = user_id).grid(column = 0, row = 3)
+    ttk.Label(login_frame, text = 'Password').grid(column = 1, row = 2)
+    ttk.Entry(login_frame, textvariable = password).grid(column = 1, row = 3)
+    
+    ttk.Label(login_frame, text = 'Class').grid(column = 0, row = 4)
+    ttk.Radiobutton(login_frame, text = 'Student', variable = class_facility_bool, value = True, command = student_or_teacher).grid(column = 0, row = 6)
+    ttk.Label(login_frame, text = 'Facility').grid(column = 1, row = 4)
+    ttk.Radiobutton(login_frame, text = 'Teacher', variable = class_facility_bool, value = False, command = student_or_teacher).grid(column = 1, row = 6)
 
-    ttk.Label(main_frame, text = 'Enter User ID:').grid(row = 1, column = 0)
-    ttk.Entry(main_frame, textvariable = user_id).grid(row = 1, column = 1)
-    ttk.Label(main_frame, text = 'Enter Password:').grid(row = 2, column = 0)
-    ttk.Entry(main_frame, textvariable = password).grid(row = 2, column = 1)
-    ttk.Label(main_frame, text = 'Enter First Name:').grid(row = 3, column = 0)
-    ttk.Entry(main_frame, textvariable = first_name).grid(row = 3, column = 1)
-    ttk.Label(main_frame, text = 'Enter Last Name:').grid(row = 4, column = 0)
-    ttk.Entry(main_frame, textvariable = last_name).grid(row = 4, column = 1)
+    grade_class_combobox = ttk.Combobox(login_frame, state = 'disabled', textvariable = class_grade, values = classes)
+    grade_class_combobox.grid(column = 0, row = 5)
 
-    ttk.Label(main_frame, text = 'Choose Class').pack()
-    grade_class_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = class_grade, values = classes)
-    grade_class_combobox.grid(row = 5, column = 0)
-
-    ttk.Label(main_frame, text = 'Choose Facility').pack()
-    facility_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = facility, values = facilities)
-    facility_combobox.grid(row = 5, column = 1)
+    facility_combobox = ttk.Combobox(login_frame, state = 'disabled', textvariable = facility, values = facilities)
+    facility_combobox.grid(column = 1, row = 5)
 
     ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility, facility_combobox, grade_class_combobox)).pack()
     ttk.Button(main_frame, text = '<--- Login', command = lambda: login_page()).pack()
