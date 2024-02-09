@@ -233,12 +233,13 @@ def login_page():
     main_frame_login = ttk.Frame(main_frame)
 
     #Widgets
-    ttk.Label(main_frame_login, text = 'ID').pack()
+    ttk.Label(main_frame_login, text = 'ID', anchor = 'w', justify = 'left', width = 20).pack()
     ttk.Entry(main_frame_login, textvariable = Id).pack()
-    ttk.Label(main_frame_login, text = 'Password').pack()
+    ttk.Label(main_frame_login, text = 'Password', anchor = 'w', justify = 'left', width = 20).pack()
     ttk.Entry(main_frame_login, textvariable = password, show = '*').pack()
     ttk.Button(main_frame_login, text = 'Login', command = lambda: login(Id, password)).pack()
     ttk.Button(main_frame_login, text = "Don't have an account? Register Here!", command = lambda: register_page()).pack()
+
 
     #Grid
     main_frame.columnconfigure(0, weight = 1)
@@ -278,25 +279,25 @@ def register_page():
     main_frame = ttk.Frame(window, width = 900, height = 600)
     main_frame.pack()
     login_frame = tk.Frame()
-    login_frame.place( anchor = 'center', relx = 0.5, rely = 0.5)
+    login_frame.place(anchor = 'center', relx = 0.5, rely = 0.4)
 
     #Grid
     login_frame.rowconfigure((0, 1, 2, 3, 4, 5, 6), weight = 1)
     login_frame.columnconfigure((0, 1), weight = 1)
 
     #Widgets
-    ttk.Label(login_frame, text = 'First Name').grid(column = 0, row = 0)
+    ttk.Label(login_frame, text = 'First Name', anchor = 'w', justify = 'left', width = 20).grid(column = 0, row = 0)
     ttk.Entry(login_frame, textvariable = first_name).grid(column = 0, row = 1)
-    ttk.Label(login_frame, text = 'Last Name').grid(column = 1, row = 0)
+    ttk.Label(login_frame, text = 'Last Name', anchor = 'w', justify = 'left', width = 20).grid(column = 1, row = 0)
     ttk.Entry(login_frame, textvariable = last_name).grid(column = 1, row = 1)
-    ttk.Label(login_frame, text = 'User ID').grid(column = 0, row = 2)
+    ttk.Label(login_frame, text = 'User ID', anchor = 'w', justify = 'left', width = 20).grid(column = 0, row = 2)
     ttk.Entry(login_frame, textvariable = user_id).grid(column = 0, row = 3)
-    ttk.Label(login_frame, text = 'Password').grid(column = 1, row = 2)
+    ttk.Label(login_frame, text = 'Password', anchor = 'w', justify = 'left', width = 20).grid(column = 1, row = 2)
     ttk.Entry(login_frame, textvariable = password).grid(column = 1, row = 3)
     
-    ttk.Label(login_frame, text = 'Class').grid(column = 0, row = 4)
+    ttk.Label(login_frame, text = 'Class', anchor = 'w', justify = 'left', width = 20).grid(column = 0, row = 4)
     ttk.Radiobutton(login_frame, text = 'Student', variable = class_facility_bool, value = True, command = student_or_teacher).grid(column = 0, row = 6)
-    ttk.Label(login_frame, text = 'Facility').grid(column = 1, row = 4)
+    ttk.Label(login_frame, text = 'Facility', anchor = 'w', justify = 'left', width = 20).grid(column = 1, row = 4)
     ttk.Radiobutton(login_frame, text = 'Teacher', variable = class_facility_bool, value = False, command = student_or_teacher).grid(column = 1, row = 6)
 
     grade_class_combobox = ttk.Combobox(login_frame, state = 'disabled', textvariable = class_grade, values = classes)
@@ -305,8 +306,8 @@ def register_page():
     facility_combobox = ttk.Combobox(login_frame, state = 'disabled', textvariable = facility, values = facilities)
     facility_combobox.grid(column = 1, row = 5)
 
-    ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility, facility_combobox, grade_class_combobox)).pack()
-    ttk.Button(main_frame, text = '<--- Login', command = lambda: login_page()).pack()
+    ttk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility, facility_combobox, grade_class_combobox)).place(anchor = 'center', relx = 0.5, rely = 0.6)
+    ttk.Button(main_frame, text = '<--- Login', command = lambda: login_page()).place(anchor = 'center', relx = 0.1, rely = 0.1)
 
 def home_page(user, card):
     #Clear Page
