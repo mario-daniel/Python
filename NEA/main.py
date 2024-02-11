@@ -1,5 +1,6 @@
 import tkinter as tk
 from tkinter import ttk, messagebox
+from PIL import Image, ImageTk
 import sqlite3
 
 conn = sqlite3.connect('rfid')
@@ -227,26 +228,27 @@ def login_page():
     Id = tk.StringVar()
     password = tk.StringVar()
 
-    # main_frames
-    main_frame = ttk.Frame(window, width = 900, height = 600)
-    main_frame.pack(expand = True, fill = 'both')
-    main_frame_login = ttk.Frame(main_frame)
+    password_icon = (Image.open("padlock.png")).resize((20,20), Image.ADAPTIVE)
+    password_icon = ImageTk.PhotoImage(password_icon)
+    id_icon = (Image.open("id.png")).resize((20,20), Image.ADAPTIVE)
+    id_icon = ImageTk.PhotoImage(id_icon)
+    
+    #Frames
+    login_frame = tk.Frame(window, width = '500', height = '500', highlightbackground="black", highlightthickness=2)
+    login_frame.place(anchor = 'center', relx = 0.5, rely = 0.5)
 
     #Widgets
-    ttk.Label(main_frame_login, text = 'ID', anchor = 'w', justify = 'left', width = 20).pack()
-    ttk.Entry(main_frame_login, textvariable = Id).pack()
-    ttk.Label(main_frame_login, text = 'Password', anchor = 'w', justify = 'left', width = 20).pack()
-    ttk.Entry(main_frame_login, textvariable = password, show = '*').pack()
-    ttk.Button(main_frame_login, text = 'Login', command = lambda: login(Id, password)).pack()
-    ttk.Button(main_frame_login, text = "Don't have an account? Register Here!", command = lambda: register_page()).pack()
-
-
-    #Grid
-    main_frame.columnconfigure(0, weight = 1)
-    main_frame.columnconfigure(1, weight = 1)
-    main_frame.columnconfigure(2, weight = 1)
-    main_frame.rowconfigure(0, weight = 1)
-    main_frame_login.grid(row = 0, column = 0)
+    window.configure(bg = '#ff7e75')
+    ttk.Label(login_frame, text = 'User Login', font = 'Impact 50').place(anchor = 'center', relx = 0.5, rely = 0.25)
+    ttk.Label(login_frame, image = id_icon).place(anchor = 'center', relx = 0.3, rely = 0.4)
+    ttk.Label(login_frame, text = 'ID', font = 'Impact 15').place(anchor = 'center', relx = 0.35, rely = 0.4)
+    ttk.Entry(login_frame, textvariable = Id, width = 36).place(anchor = 'center', relx = 0.5, rely = 0.45)
+    ttk.Label(login_frame, image = password_icon).place(anchor = 'center', relx = 0.3, rely = 0.53)
+    ttk.Label(login_frame, text = 'Password', font = 'Impact 15').place(anchor = 'center', relx = 0.41, rely = 0.53)
+    ttk.Entry(login_frame, textvariable = password, show = '*', width = 36).place(anchor = 'center', relx = 0.5, rely = 0.58)
+    tk.Button(login_frame, text = 'Login', command = lambda: login(Id, password), font = 'Impact', width = 36).place(anchor = 'center', relx = 0.5, rely = 0.7)
+    tk.Button(login_frame, text = "Don't have an account? Register Here!", command = lambda: register_page()).place(anchor = 'center', relx = 0.5, rely = 0.8)
+    window.mainloop()
 
 def register_page(): 
 
