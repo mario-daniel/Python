@@ -246,7 +246,7 @@ def login_page():
     ttk.Label(login_frame, image = password_icon).place(anchor = 'center', relx = 0.3, rely = 0.53)
     ttk.Label(login_frame, text = 'Password', font = 'Impact 15').place(anchor = 'center', relx = 0.41, rely = 0.53)
     ttk.Entry(login_frame, textvariable = password, show = '*', width = 36).place(anchor = 'center', relx = 0.5, rely = 0.58)
-    tk.Button(login_frame, text = 'Login', command = lambda: login(Id, password), font = 'Impact', width = 36).place(anchor = 'center', relx = 0.5, rely = 0.7)
+    tk.Button(login_frame, bg = '#d4d4d4', text = 'Login', command = lambda: login(Id, password), font = 'Impact', width = 36).place(anchor = 'center', relx = 0.5, rely = 0.7)
     tk.Button(login_frame, bg = '#d4d4d4', text = "Don't have an account? Register Here", command = lambda: register_page()).place(anchor = 'center', relx = 0.5, rely = 0.8)
     window.mainloop()
 
