@@ -5,7 +5,7 @@ def main():
     cursor = conn.cursor()
 
     cursor.execute("DROP TABLE IF EXISTS Facility;")
-    cursor.execute("DROP TABLE IF EXISTS User;")
+    #cursor.execute("DROP TABLE IF EXISTS User;")
     cursor.execute("DROP TABLE IF EXISTS Booking;")
     cursor.execute("DROP TABLE IF EXISTS Timeslot;")
     cursor.execute("DROP TABLE IF EXISTS Card;")
