@@ -39,18 +39,12 @@ class User:
         if hashed_password == user_db[0][5]: return True
         else: return False
 
-    def register(self, user_id, password, first_name, last_name, class_grade, facility, facility_combobox, grade_class_combobox):
+    def register(self, user_id, password, first_name, last_name, class_facility, class_facility_bool):
         import re
-        state = facility_combobox['state'].string
-        state2 = grade_class_combobox['state'].string
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
         Id_db = cursor.execute('SELECT user_id FROM User WHERE user_id = ?', (user_id.get(),)).fetchall()
-        if user_id.get() == '' or password.get() == '' or first_name.get() == '' or last_name.get() == '' or (class_grade.get() == '' and facility.get() == ''):
+        if user_id.get() == '' or password.get() == '' or first_name.get() == '' or last_name.get() == '' or class_facility.get() == '':
             messagebox.showerror("Register Failed", "All fields must be filled out.")
-        elif user_id.get()[0] != 'S' and user_id.get()[0] != 'T':
-            messagebox.showerror("Register Failed", "ID can only start with S or T.")
-        elif (user_id.get()[0] == 'S' and state == 'active') or (user_id.get()[0] == 'T' and state2 == 'active'):
-            messagebox.showerror("Register Failed", "Teacher or Student can not be responsible for a Class or Facility, Respectively.")
         elif Id_db != []:
             if Id_db[0][0] == user_id.get():
                 messagebox.showerror("Register Failed", "User already exists.")
@@ -59,14 +53,18 @@ class User:
         elif re.match(pattern, password.get()):
             password = password.get()
             hashed_password, salt = self.password_hash(password)
-            facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?', (facility.get(), )).fetchall()
+            facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?', (class_facility.get(), )).fetchall()
             if facility_id_db == []: facility_id_db = [(0,)]
             card = cursor.execute('SELECT card_id FROM Card WHERE owner IS NULL LIMIT 1;').fetchall()
-            if state == 'active':
+            if not class_facility_bool.get():
                 cursor.execute('UPDATE Card SET owner = "T" WHERE card_id = ?;', (card[0][0],))
+                class_grade = ''
+                user_id = f'T{user_id.get()}'
             else:
                 cursor.execute('UPDATE Card SET owner = "S" WHERE card_id = ?;', (card[0][0],))
-            cursor.execute('INSERT INTO User (user_id, card_id, facility_id, first_name, last_name, hashed_password, salt, class_grade) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (user_id.get(), card[0][0], facility_id_db[0][0], first_name.get(), last_name.get(), hashed_password, salt, class_grade.get()))
+                class_grade = class_facility.get()
+                user_id = f'S{user_id.get()}'
+            cursor.execute('INSERT INTO User (user_id, card_id, facility_id, first_name, last_name, hashed_password, salt, class_grade) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (user_id, card[0][0], facility_id_db[0][0], first_name.get(), last_name.get(), hashed_password, salt, class_grade))
             conn.commit()
             messagebox.showinfo('Registration Successful', 'Please Login')
             return True
@@ -247,21 +245,22 @@ def login_page():
     ttk.Label(login_frame, text = 'Password', font = 'Impact 15').place(anchor = 'center', relx = 0.41, rely = 0.53)
     ttk.Entry(login_frame, textvariable = password, show = '*', width = 36).place(anchor = 'center', relx = 0.5, rely = 0.58)
     tk.Button(login_frame, bg = '#d4d4d4', text = 'Login', command = lambda: login(Id, password), font = 'Impact', width = 36).place(anchor = 'center', relx = 0.5, rely = 0.7)
-    tk.Button(login_frame, bg = '#d4d4d4', text = "Don't have an account? Register Here", command = lambda: register_page()).place(anchor = 'center', relx = 0.5, rely = 0.8)
+    ttk.Label(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.77)
+    tk.Button(login_frame, bg = '#d4d4d4', text = "Don't have an account? Register Here", command = lambda: register_page()).place(anchor = 'center', relx = 0.5, rely = 0.83)
     window.mainloop()
 
 def register_page(): 
 
-    def register(user_id, password, first_name, last_name, class_grade, facility, facility_combobox, grade_class_combobox):
-        if User().register(user_id, password, first_name, last_name, class_grade, facility, facility_combobox, grade_class_combobox): login_page()
+    def register(user_id, password, first_name, last_name, class_facility, class_facility_bool):
+        if User().register(user_id, password, first_name, last_name, class_facility, class_facility_bool): login_page()
 
     def student_or_teacher():
         if class_facility_bool.get():
-            facility_combobox.config(state = 'disabled')
-            grade_class_combobox.config(state = 'readonly')
+            Label.config(text = 'Select Class')
+            grade_facility_combobox.config(values = classes, state = 'readonly')
         else:
-            grade_class_combobox.config(state = 'disabled')
-            facility_combobox.config(state = 'readonly')
+            Label.config(text = 'Select Facility')
+            grade_facility_combobox.config(values = facilities, state = 'readonly')
 
     #Clear Page
     remove_widgets()
@@ -271,45 +270,41 @@ def register_page():
     password = tk.StringVar()
     first_name = tk.StringVar()
     last_name = tk.StringVar()
-    class_grade = tk.StringVar()
-    facility = tk.StringVar()
+    class_facility = tk.StringVar()
     class_facility_bool = tk.BooleanVar()
     facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
     classes = ('9A', '9B', '9C', '9D', '10A', '10B', '10C', '10D', '11A', '11B', '11C', '11D', '12A', '12B', '12C', '12D', '13A', '13B', '13C', '13D')
 
     #Frames
-    main_frame = ttk.Frame(window, width = 900, height = 600)
-    main_frame.pack()
-    login_frame = tk.Frame()
-    login_frame.place(anchor = 'center', relx = 0.5, rely = 0.4)
-
-    #Grid
-    login_frame.rowconfigure((0, 1, 2, 3, 4, 5, 6), weight = 1)
-    login_frame.columnconfigure((0, 1), weight = 1)
+    login_frame = tk.Frame(window, width = '500', height = '500', highlightbackground = "black", highlightthickness = 2)
+    login_frame.place(anchor = 'center', relx = 0.5, rely = 0.5)
 
     #Widgets
-    ttk.Label(login_frame, text = 'First Name', anchor = 'w', justify = 'left', width = 20, font = 'Impact 15').grid(column = 0, row = 0)
-    ttk.Entry(login_frame, textvariable = first_name, width = 36).grid(column = 0, row = 1)
-    ttk.Label(login_frame, text = 'Last Name', anchor = 'w', justify = 'left', width = 20, font = 'Impact 15').grid(column = 1, row = 0)
-    ttk.Entry(login_frame, textvariable = last_name, width = 36).grid(column = 1, row = 1)
-    ttk.Label(login_frame, text = 'User ID', anchor = 'w', justify = 'left', width = 20, font = 'Impact 15').grid(column = 0, row = 2)
-    ttk.Entry(login_frame, textvariable = user_id, width = 36).grid(column = 0, row = 3)
-    ttk.Label(login_frame, text = 'Password', anchor = 'w', justify = 'left', width = 20, font = 'Impact 15').grid(column = 1, row = 2)
-    ttk.Entry(login_frame, textvariable = password, width = 36).grid(column = 1, row = 3)
+    ttk.Label(login_frame, text = 'Register', font = 'Impact 50').place(anchor = 'center', relx = 0.5, rely = 0.17)
+    ttk.Label(login_frame, text = 'First Name', font = 'Impact 15').place(anchor = 'center', relx = 0.2, rely = 0.32)
+    ttk.Entry(login_frame, textvariable = first_name, width = 31).place(anchor = 'center', relx = 0.3, rely = 0.37)
+    ttk.Label(login_frame, text = 'Last Name', font = 'Impact 15').place(anchor = 'center', relx = 0.6, rely = 0.32)
+    ttk.Entry(login_frame, textvariable = last_name, width = 31).place(anchor = 'center', relx = 0.7, rely = 0.37)
+    ttk.Label(login_frame, text = 'User ID', font = 'Impact 15').place(anchor = 'center', relx = 0.18, rely = 0.47)
+    ttk.Entry(login_frame, textvariable = user_id, width = 31).place(anchor = 'center', relx = 0.3, rely = 0.52)
+    ttk.Label(login_frame, text = 'Password', font = 'Impact 15').place(anchor = 'center', relx = 0.2, rely = 0.62)
+    ttk.Entry(login_frame, textvariable = password, width = 31).place(anchor = 'center', relx = 0.3, rely = 0.67)
     
-    ttk.Label(login_frame, text = 'Class', anchor = 'w', justify = 'left', width = 20, font = 'Impact 15').grid(column = 0, row = 4)
-    ttk.Radiobutton(login_frame, text = 'Student', variable = class_facility_bool, value = True, command = student_or_teacher).grid(column = 0, row = 6)
-    ttk.Label(login_frame, text = 'Facility', anchor = 'w', justify = 'left', width = 20, font = 'Impact 15').grid(column = 1, row = 4)
-    ttk.Radiobutton(login_frame, text = 'Teacher', variable = class_facility_bool, value = False, command = student_or_teacher).grid(column = 1, row = 6)
+    ttk.Label(login_frame, text = 'Occupation', font = 'Impact 15').place(anchor = 'center', relx = 0.61, rely = 0.47)
+    student_button = tk.Radiobutton(login_frame, text = 'Student', variable = class_facility_bool, value = True, command = student_or_teacher)
+    student_button.place(anchor = 'center', relx = 0.575, rely = 0.52)
+    ttk.Label(login_frame, text = 'Facility', font = 'Impact 15')
+    teacher_button = tk.Radiobutton(login_frame, text = 'Teacher', variable = class_facility_bool, value = False, command = student_or_teacher)
+    teacher_button.place(anchor = 'center', relx = 0.8, rely = 0.52)
 
-    grade_class_combobox = ttk.Combobox(login_frame, state = 'disabled', textvariable = class_grade, values = classes, width = 33)
-    grade_class_combobox.grid(column = 0, row = 5)
+    Label = ttk.Label(login_frame, text = 'Select Occupation', font = 'Impact 15')
+    Label.place(anchor = 'w', relx = 0.51, rely = 0.62)
+    grade_facility_combobox = ttk.Combobox(login_frame, state = 'disabled', textvariable = class_facility, values = '', width = 28)
+    grade_facility_combobox.place(anchor = 'center', relx = 0.7, rely = 0.67)
 
-    facility_combobox = ttk.Combobox(login_frame, state = 'disabled', textvariable = facility, values = facilities, width = 33)
-    facility_combobox.grid(column = 1, row = 5)
-
-    tk.Button(main_frame, text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_grade, facility, facility_combobox, grade_class_combobox)).place(anchor = 'center', relx = 0.5, rely = 0.6)
-    ttk.Button(main_frame, text = '<--- Login', command = lambda: login_page()).place(anchor = 'center', relx = 0.1, rely = 0.1)
+    tk.Button(login_frame, bg = '#d4d4d4', text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_facility, class_facility_bool), font = 'Impact', width = 36).place(anchor = 'center', relx = 0.5, rely = 0.79)
+    ttk.Label(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.86)
+    tk.Button(login_frame, bg = '#d4d4d4', text = 'Login', command = lambda: login_page()).place(anchor = 'center', relx = 0.5, rely = 0.92)
 
 def home_page(user, card):
     #Clear Page
@@ -477,5 +472,3 @@ if __name__ == '__main__':
     main()
     login_page()
     window.mainloop()
-
-#https://colorlib.com/wp/free-bootstrap-registration-forms/
