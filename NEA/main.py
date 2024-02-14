@@ -1,14 +1,18 @@
-import tkinter as tk
-from tkinter import ttk, messagebox
-from PIL import Image, ImageTk
+import customtkinter as ctk
+from tkinter import messagebox
+from PIL import Image
 import sqlite3
 
 conn = sqlite3.connect('rfid')
 cursor = conn.cursor()
 
-window = tk.Tk()
+window = ctk.CTk(fg_color = '#ff7e75')
 window.title('RFID System')
-window.geometry('900x600')
+window.geometry('600x600')
+window.resizable(False, False)
+# window_frame = ctk.CTkFrame(window, fg_color = '#ff7e75', corner_radius = 0, border_color = 'black', border_width = 2)
+# window_frame.pack(expand = True, fill = 'both')
+ctk.set_appearance_mode('light')
 
 class User:
     def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = ''):
@@ -66,7 +70,7 @@ class User:
                 user_id = f'S{user_id.get()}'
             cursor.execute('INSERT INTO User (user_id, card_id, facility_id, first_name, last_name, hashed_password, salt, class_grade) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (user_id, card[0][0], facility_id_db[0][0], first_name.get(), last_name.get(), hashed_password, salt, class_grade))
             conn.commit()
-            messagebox.showinfo('Registration Successful', 'Please Login')
+            messagebox.showinfo('Registration Successful', f'Please Login with {user_id}')
             return True
     
     def password_hash(self, password):
@@ -103,7 +107,7 @@ class Student(User):
         conn.commit()
         self.update_table()
         timing.set('')
-        timings_available_combobox.config(state = 'disabled')
+        timings_available_combobox.configure(state = 'disabled')
         messagebox.showinfo('Request Successful', f'Requested from {self.start_time} to {self.end_time} on {self.day} {self.date}')
 
     def update_table(self):
@@ -138,20 +142,20 @@ class Card:
         self.tag_id = tag_id
         self.owner = owner
 
-class Outgoing_Approval_Segment(ttk.Frame):
+class Outgoing_Approval_Segment(ctk.CTkFrame):
     def __init__(self, parent, booking, status, outgoing_approvals):
         super().__init__(master = parent)
         self.booking = booking
         self.outgoing_approvals = outgoing_approvals
         self.rowconfigure(0, weight = 1)
         self.columnconfigure((0, 1, 2, 3, 4, 5, 6), weight = 1)
-        ttk.Label(self, text = self.booking[1], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 0)
-        ttk.Label(self, text = self.booking[2], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 1)
-        ttk.Label(self, text = self.booking[3], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 2)
-        ttk.Label(self, text = self.booking[4], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 3)
-        ttk.Label(self, text = self.booking[5], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 4)
-        ttk.Label(self, text = status, width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 5)
-        ttk.Button(self, text = 'Remove', command = lambda: self.remove_booking()).grid(row = 0, column = 6)
+        ctk.CTkLabel(self, text = self.booking[1], width = 10, borderwidth = 10, anchor="center", justify="center", relief = ctk.CTkGROOVE).grid(row = 0, column = 0)
+        ctk.CTkLabel(self, text = self.booking[2], width = 10, borderwidth = 10, anchor="center", justify="center", relief = ctk.CTkGROOVE).grid(row = 0, column = 1)
+        ctk.CTkLabel(self, text = self.booking[3], width = 10, borderwidth = 10, anchor="center", justify="center", relief = ctk.CTkGROOVE).grid(row = 0, column = 2)
+        ctk.CTkLabel(self, text = self.booking[4], width = 10, borderwidth = 10, anchor="center", justify="center", relief = ctk.CTkGROOVE).grid(row = 0, column = 3)
+        ctk.CTkLabel(self, text = self.booking[5], width = 10, borderwidth = 10, anchor="center", justify="center", relief = ctk.CTkGROOVE).grid(row = 0, column = 4)
+        ctk.CTkLabel(self, text = status, width = 10, borderwidth = 10, anchor="center", justify="center", relief = ctk.CTkGROOVE).grid(row = 0, column = 5)
+        ctk.CTkButton(self, text = 'Remove', command = lambda: self.remove_booking()).grid(row = 0, column = 6)
         self.pack()
     
     def remove_booking(self):
@@ -165,24 +169,24 @@ class Outgoing_Approval_Segment(ttk.Frame):
                 self.outgoing_approvals.remove(approval)
                 del approval
 
-class Incoming_Approval_Segment(ttk.Frame):
+class Incoming_Approval_Segment(ctk.CTkFrame):
     def __init__(self, parent, incoming_approvals, booking, card):
         super().__init__(master = parent)
         self.card = card
         self.incoming_approvals = incoming_approvals
         self.booking = booking
-        self.rowconfigure(0, weight = 1)
-        self.columnconfigure((0, 1, 2, 3, 4, 5, 6, 7, 8, 9), weight = 1)
-        ttk.Label(self, text = self.booking[8], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 0)
-        ttk.Label(self, text = self.booking[9], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 1)
-        ttk.Label(self, text = self.booking[10], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 2)
-        ttk.Label(self, text = self.booking[1], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 3)
-        ttk.Label(self, text = self.booking[2], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 4)
-        ttk.Label(self, text = self.booking[3], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 5)
-        ttk.Label(self, text = self.booking[4], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 6)
-        ttk.Label(self, text = self.booking[5], width = 10, borderwidth = 10, anchor="center", justify="center", relief = tk.GROOVE).grid(row = 0, column = 7)
-        ttk.Button(self, text = 'Accept', command = lambda: self.accept_booking()).grid(row = 0, column = 8)
-        ttk.Button(self, text = 'Decline', command = lambda: self.decline_booking()).grid(row = 0, column = 9)
+        self.rowconfigureure(0, weight = 1)
+        self.columnconfigureure((0, 1, 2, 3, 4, 5, 6, 7, 8, 9), weight = 1)
+        ctk.CTkLabel(self, text = self.booking[8], width = 10, borderwidth = 10, anchor="center", justify="center", relief = ctk.CTkGROOVE).grid(row = 0, column = 0)
+        ctk.CTkLabel(self, text = self.booking[9], width = 10, borderwidth = 10, anchor="center", justify="center", relief = ctk.CTkGROOVE).grid(row = 0, column = 1)
+        ctk.CTkLabel(self, text = self.booking[10], width = 10, borderwidth = 10, anchor="center", justify="center", relief = ctk.CTkGROOVE).grid(row = 0, column = 2)
+        ctk.CTkLabel(self, text = self.booking[1], width = 10, borderwidth = 10, anchor="center", justify="center", relief = ctk.CTkGROOVE).grid(row = 0, column = 3)
+        ctk.CTkLabel(self, text = self.booking[2], width = 10, borderwidth = 10, anchor="center", justify="center", relief = ctk.CTkGROOVE).grid(row = 0, column = 4)
+        ctk.CTkLabel(self, text = self.booking[3], width = 10, borderwidth = 10, anchor="center", justify="center", relief = ctk.CTkGROOVE).grid(row = 0, column = 5)
+        ctk.CTkLabel(self, text = self.booking[4], width = 10, borderwidth = 10, anchor="center", justify="center", relief = ctk.CTkGROOVE).grid(row = 0, column = 6)
+        ctk.CTkLabel(self, text = self.booking[5], width = 10, borderwidth = 10, anchor="center", justify="center", relief = ctk.CTkGROOVE).grid(row = 0, column = 7)
+        ctk.CTkButton(self, text = 'Accept', command = lambda: self.accept_booking()).grid(row = 0, column = 8)
+        ctk.CTkButton(self, text = 'Decline', command = lambda: self.decline_booking()).grid(row = 0, column = 9)
         self.pack()
 
     def accept_booking(self):
@@ -223,31 +227,27 @@ def login_page():
     remove_widgets()
 
     #Vairables
-    Id = tk.StringVar()
-    password = tk.StringVar()
+    Id = ctk.StringVar()
+    password = ctk.StringVar()
 
-    password_icon = (Image.open("padlock.png")).resize((20,20), Image.ADAPTIVE)
-    password_icon = ImageTk.PhotoImage(password_icon)
-    id_icon = (Image.open("id.png")).resize((20,20), Image.ADAPTIVE)
-    id_icon = ImageTk.PhotoImage(id_icon)
+    password_icon = ctk.CTkImage(light_image = Image.open("padlock.png"), size = (22,22))
+    id_icon = ctk.CTkImage(light_image = Image.open("id.png"), size = (22,22))
     
     #Frames
-    login_frame = tk.Frame(window, width = '500', height = '500', highlightbackground="black", highlightthickness=2)
+    login_frame = ctk.CTkFrame(window, width = 500, height = 500, border_color = 'black', border_width = 2, fg_color = '#F0F0F0', corner_radius = 0)
     login_frame.place(anchor = 'center', relx = 0.5, rely = 0.5)
 
     #Widgets
-    window.configure(bg = '#ff7e75')
-    ttk.Label(login_frame, text = 'User Login', font = 'Impact 50').place(anchor = 'center', relx = 0.5, rely = 0.25)
-    ttk.Label(login_frame, image = id_icon).place(anchor = 'center', relx = 0.3, rely = 0.4)
-    ttk.Label(login_frame, text = 'User ID', font = 'Impact 15').place(anchor = 'center', relx = 0.39, rely = 0.4)
-    ttk.Entry(login_frame, textvariable = Id, width = 36).place(anchor = 'center', relx = 0.5, rely = 0.45)
-    ttk.Label(login_frame, image = password_icon).place(anchor = 'center', relx = 0.3, rely = 0.53)
-    ttk.Label(login_frame, text = 'Password', font = 'Impact 15').place(anchor = 'center', relx = 0.41, rely = 0.53)
-    ttk.Entry(login_frame, textvariable = password, show = '*', width = 36).place(anchor = 'center', relx = 0.5, rely = 0.58)
-    tk.Button(login_frame, bg = '#d4d4d4', text = 'Login', command = lambda: login(Id, password), font = 'Impact', width = 36).place(anchor = 'center', relx = 0.5, rely = 0.7)
-    ttk.Label(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.77)
-    tk.Button(login_frame, bg = '#d4d4d4', text = "Don't have an account? Register Here", command = lambda: register_page()).place(anchor = 'center', relx = 0.5, rely = 0.83)
-    window.mainloop()
+    ctk.CTkLabel(login_frame, text = 'User Login', font = ('Impact', 70)).place(anchor = 'center', relx = 0.5, rely = 0.25)
+    ctk.CTkLabel(login_frame, text = '', image = id_icon).place(anchor = 'center', relx = 0.33, rely = 0.4)
+    ctk.CTkLabel(login_frame, text = 'User ID', font = ('Impact', 20)).place(anchor = 'center', relx = 0.42, rely = 0.4)
+    ctk.CTkEntry(login_frame, textvariable = Id, width = 200, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.5, rely = 0.45)
+    ctk.CTkLabel(login_frame, text = '', image = password_icon).place(anchor = 'center', relx = 0.33, rely = 0.525)
+    ctk.CTkLabel(login_frame, text = 'Password', font = ('Impact', 20)).place(anchor = 'center', relx = 0.44, rely = 0.53)
+    ctk.CTkEntry(login_frame, textvariable = password, show = '*', width = 200, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.5, rely = 0.58)
+    ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Login', text_color = 'black', fg_color = 'white', font = ('Impact', 25), command = lambda: login(Id, password)).place(anchor = 'center', relx = 0.5, rely = 0.7)
+    ctk.CTkLabel(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.77)
+    ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Don't have an account? Register Here", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: register_page()).place(anchor = 'center', relx = 0.5, rely = 0.83)
 
 def register_page(): 
 
@@ -256,75 +256,75 @@ def register_page():
 
     def student_or_teacher():
         if class_facility_bool.get():
-            Label.config(text = 'Select Class')
-            grade_facility_combobox.config(values = classes, state = 'readonly')
+            Label.configure(text = 'Select Class')
+            grade_facility_combobox.configure(values = classes, state = 'readonly')
         else:
-            Label.config(text = 'Select Facility')
-            grade_facility_combobox.config(values = facilities, state = 'readonly')
+            Label.configure(text = 'Select Facility')
+            grade_facility_combobox.configure(values = facilities, state = 'readonly')
 
     #Clear Page
     remove_widgets()
 
     #Variables
-    user_id = tk.StringVar()
-    password = tk.StringVar()
-    first_name = tk.StringVar()
-    last_name = tk.StringVar()
-    class_facility = tk.StringVar()
-    class_facility_bool = tk.BooleanVar()
+    user_id = ctk.StringVar()
+    password = ctk.StringVar()
+    first_name = ctk.StringVar()
+    last_name = ctk.StringVar()
+    class_facility = ctk.StringVar()
+    class_facility_bool = ctk.BooleanVar()
     facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
     classes = ('9A', '9B', '9C', '9D', '10A', '10B', '10C', '10D', '11A', '11B', '11C', '11D', '12A', '12B', '12C', '12D', '13A', '13B', '13C', '13D')
 
     #Frames
-    login_frame = tk.Frame(window, width = '500', height = '500', highlightbackground = "black", highlightthickness = 2)
+    login_frame = ctk.CTkFrame(window, width = 500, height = 500, border_color = "black", fg_color = '#F0F0F0', border_width = 2, corner_radius = 0)
     login_frame.place(anchor = 'center', relx = 0.5, rely = 0.5)
 
     #Widgets
-    ttk.Label(login_frame, text = 'Register', font = 'Impact 50').place(anchor = 'center', relx = 0.5, rely = 0.17)
-    ttk.Label(login_frame, text = 'First Name', font = 'Impact 15').place(anchor = 'center', relx = 0.2, rely = 0.32)
-    ttk.Entry(login_frame, textvariable = first_name, width = 31).place(anchor = 'center', relx = 0.3, rely = 0.37)
-    ttk.Label(login_frame, text = 'Last Name', font = 'Impact 15').place(anchor = 'center', relx = 0.6, rely = 0.32)
-    ttk.Entry(login_frame, textvariable = last_name, width = 31).place(anchor = 'center', relx = 0.7, rely = 0.37)
-    ttk.Label(login_frame, text = 'User ID', font = 'Impact 15').place(anchor = 'center', relx = 0.18, rely = 0.47)
-    ttk.Entry(login_frame, textvariable = user_id, width = 31).place(anchor = 'center', relx = 0.3, rely = 0.52)
-    ttk.Label(login_frame, text = 'Password', font = 'Impact 15').place(anchor = 'center', relx = 0.2, rely = 0.62)
-    ttk.Entry(login_frame, textvariable = password, width = 31).place(anchor = 'center', relx = 0.3, rely = 0.67)
+    ctk.CTkLabel(login_frame, text = 'Register', font = ('Impact', 70)).place(anchor = 'center', relx = 0.5, rely = 0.17)
+    ctk.CTkLabel(login_frame, text = 'First Name', font = ('Impact', 20)).place(anchor = 'center', relx = 0.2, rely = 0.32)
+    ctk.CTkEntry(login_frame, textvariable = first_name, width = 190, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.3, rely = 0.37)
+    ctk.CTkLabel(login_frame, text = 'Last Name', font = ('Impact', 20)).place(anchor = 'center', relx = 0.6, rely = 0.32)
+    ctk.CTkEntry(login_frame, textvariable = last_name, width = 190, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.7, rely = 0.37)
+    ctk.CTkLabel(login_frame, text = 'User ID', font = ('Impact', 20)).place(anchor = 'center', relx = 0.18, rely = 0.47)
+    ctk.CTkEntry(login_frame, textvariable = user_id, width = 190, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.3, rely = 0.52)
+    ctk.CTkLabel(login_frame, text = 'Password', font = ('Impact', 20)).place(anchor = 'center', relx = 0.2, rely = 0.62)
+    ctk.CTkEntry(login_frame, textvariable = password, width = 190, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.3, rely = 0.67)
     
-    ttk.Label(login_frame, text = 'Occupation', font = 'Impact 15').place(anchor = 'center', relx = 0.61, rely = 0.47)
-    student_button = tk.Radiobutton(login_frame, text = 'Student', variable = class_facility_bool, value = True, command = student_or_teacher)
-    student_button.place(anchor = 'center', relx = 0.575, rely = 0.52)
-    ttk.Label(login_frame, text = 'Facility', font = 'Impact 15')
-    teacher_button = tk.Radiobutton(login_frame, text = 'Teacher', variable = class_facility_bool, value = False, command = student_or_teacher)
+    ctk.CTkLabel(login_frame, text = 'Occupation', font = ('Impact', 20)).place(anchor = 'center', relx = 0.61, rely = 0.47)
+    student_button = ctk.CTkRadioButton(login_frame, text = 'Student', fg_color = 'black', border_color = 'black', hover_color = '#707070', radiobutton_height = 10, radiobutton_width = 10, variable = class_facility_bool, value = True, command = student_or_teacher)
+    student_button.place(anchor = 'center', relx = 0.62, rely = 0.52)
+    ctk.CTkLabel(login_frame, text = 'Facility', font = ('Impact', 20))
+    teacher_button = ctk.CTkRadioButton(login_frame, text = 'Teacher', fg_color = 'black', border_color = 'black', hover_color = '#707070', radiobutton_height = 10, radiobutton_width = 10, variable = class_facility_bool, value = False, command = student_or_teacher)
     teacher_button.place(anchor = 'center', relx = 0.8, rely = 0.52)
 
-    Label = ttk.Label(login_frame, text = 'Select Occupation', font = 'Impact 15')
+    Label = ctk.CTkLabel(login_frame, text = 'Select Occupation', font = ('Impact', 20))
     Label.place(anchor = 'w', relx = 0.51, rely = 0.62)
-    grade_facility_combobox = ttk.Combobox(login_frame, state = 'disabled', textvariable = class_facility, values = '', width = 28)
+    grade_facility_combobox = ctk.CTkComboBox(login_frame, border_color = 'black', button_color = 'black', state = 'disabled', variable = class_facility, values = '', width = 190, dropdown_font = ('Impact', 15))
     grade_facility_combobox.place(anchor = 'center', relx = 0.7, rely = 0.67)
 
-    tk.Button(login_frame, bg = '#d4d4d4', text = 'Register', command = lambda: register(user_id, password, first_name, last_name, class_facility, class_facility_bool), font = 'Impact', width = 36).place(anchor = 'center', relx = 0.5, rely = 0.79)
-    ttk.Label(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.86)
-    tk.Button(login_frame, bg = '#d4d4d4', text = 'Login', command = lambda: login_page()).place(anchor = 'center', relx = 0.5, rely = 0.92)
+    ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Register", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: register(user_id, password, first_name, last_name, class_facility, class_facility_bool)).place(anchor = 'center', relx = 0.5, rely = 0.79)
+    ctk.CTkLabel(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.86)
+    ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Login", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: login_page()).place(anchor = 'center', relx = 0.5, rely = 0.92)
 
 def home_page(user, card):
     #Clear Page
     remove_widgets()
     
     #Frames
-    main_frame = ttk.Frame(window, width = 900, height = 600)
-    main_frame.pack(expand = True, fill = 'both')
+    login_frame = ctk.CTkFrame(window, width = 500, height = 500, border_color = "black", border_width = 2)
+    login_frame.place(anchor = 'center', relx = 0.5, rely = 0.5)
 
     #Widgets
-    ttk.Button(main_frame, text = 'Profile', command = lambda: print('Profile Page')).pack()
+    ctk.CTkButton(login_frame, text = 'Profile', width = 250, height = 250, command = lambda: print('Profile Page')).place(anchor = 'nw', relx = 0, rely = 0)
 
     if user.user_id[0] == 'S':
-        ttk.Button(main_frame, text = 'Booking History and Support', command = lambda: booking_history_support(user)).pack()
-        ttk.Button(main_frame, text = 'Approval Request and Outgoing Approvals', command = lambda: approval_request_page(user, card)).pack()
-        ttk.Button(main_frame, text = 'My Analytics', command = lambda: print('My Analytics Page')).pack()
+        ctk.CTkButton(login_frame, text = 'Booking History and Support', width = 250, height = 250, command = lambda: booking_history_support(user)).place(anchor = 'ne', relx = 1, rely = 0)
+        ctk.CTkButton(login_frame, text = 'Approval Request and Outgoing Approvals', width = 250, height = 250, command = lambda: approval_request_page(user, card)).place(anchor = 'sw', relx = 0, rely = 1)
+        ctk.CTkButton(login_frame, text = 'My Analytics', width = 250, height = 250, command = lambda: print('My Analytics Page')).place(anchor = 'se', relx = 1, rely = 1)
     else:
-        ttk.Button(main_frame, text = 'Response History', command = lambda: print('Response History')).pack()
-        ttk.Button(main_frame, text = 'Approval Management', command = lambda: approval_management_page(user, card)).pack()
-        ttk.Button(main_frame, text = 'School Analytics', command = lambda: print('Analytics Page')).pack()
+        ctk.CTkButton(login_frame, text = 'Response History', width = 250, height = 250, command = lambda: print('Response History')).place(anchor = 'ne', relx = 1, rely = 0)
+        ctk.CTkButton(login_frame, text = 'Approval Management', width = 250, height = 250, command = lambda: approval_management_page(user, card)).place(anchor = 'sw', relx = 0, rely = 1)
+        ctk.CTkButton(login_frame, text = 'School Analytics', width = 250, height = 250, command = lambda: print('Analytics Page')).place(anchor = 'se', relx = 1, rely = 1)
 
 def approval_request_page(user, card): 
 
@@ -338,8 +338,8 @@ def approval_request_page(user, card):
                                     AND Timeslot.status = 0;''' ,(day.get(), facility.get())).fetchall()
         for slot in timings:
             timings_available.append(f'{slot[0][:-3]} - {slot[1][:-3]}')
-        timings_available_combobox.config(state = 'active')
-        timings_available_combobox.config(values = timings_available)
+        timings_available_combobox.configure(state = 'active')
+        timings_available_combobox.configure(values = timings_available)
 
     def display_outgoing_approvals(user, outgoing_approval_frame):
         for widget in outgoing_approval_frame.winfo_children():
@@ -362,31 +362,31 @@ def approval_request_page(user, card):
 
     #Variables
     facilities = ('Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
-    facility = tk.StringVar()
-    day = tk.StringVar()
-    timing = tk.StringVar()
+    facility = ctk.StringVar()
+    day = ctk.StringVar()
+    timing = ctk.StringVar()
     
     #Frames
-    main_frame = ttk.Frame(window, width = 900, height = 600)
+    main_frame = ctk.CTkFrame(window, width = 900, height = 600)
     main_frame.pack(expand = True, fill = 'both')
-    outgoing_approval_frame = ttk.Frame(window, borderwidth = 10, relief = tk.GROOVE)
+    outgoing_approval_frame = ctk.CTkFrame(window, borderwidth = 10, relief = ctk.CTkGROOVE)
     outgoing_approval_frame.pack(expand = True, fill = 'both')
 
     #Widgets
-    ttk.Label(main_frame, text = 'Approval Request').pack()
-    ttk.Label(main_frame, text = 'Request a new approval').pack()
-    ttk.Label(main_frame, text = 'Pick Facility').pack()
-    ttk.Combobox(main_frame, textvariable = facility, values = facilities).pack()
-    ttk.Label(main_frame, text = 'Pick Day').pack()
-    ttk.Combobox(main_frame, textvariable = day, values = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')).pack()
-    ttk.Label(main_frame, text = 'Pick Timing').pack()
-    timings_available_combobox = ttk.Combobox(main_frame, state = 'disabled', textvariable = timing, values = [])
+    ctk.CTkLabel(main_frame, text = 'Approval Request').pack()
+    ctk.CTkLabel(main_frame, text = 'Request a new approval').pack()
+    ctk.CTkLabel(main_frame, text = 'Pick Facility').pack()
+    ctk.CTkCombobox(main_frame, textvariable = facility, values = facilities).pack()
+    ctk.CTkLabel(main_frame, text = 'Pick Day').pack()
+    ctk.CTkCombobox(main_frame, textvariable = day, values = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')).pack()
+    ctk.CTkLabel(main_frame, text = 'Pick Timing').pack()
+    timings_available_combobox = ctk.CTkCombobox(main_frame, state = 'disabled', textvariable = timing, values = [])
     timings_available_combobox.pack()
-    ttk.Button(main_frame, text = 'Check Available Timings', command = lambda: display_timings_available(day, facility, timings_available_combobox)).pack()
-    ttk.Button(main_frame, text = 'Request', command = lambda: user.request(day, facility, timing, timings_available_combobox)).pack()
-    ttk.Button(main_frame, text = 'Refresh', command = lambda: display_outgoing_approvals(user, outgoing_approval_frame)).pack()
-    ttk.Button(main_frame, text = '<--- HOME', command = lambda: home_page(user, card)).pack()
-    #ttk.Button(main_frame, text = 'Refresh', command = lambda: refresh_window(outgoing_approval_frame)).pack()
+    ctk.CTkButton(main_frame, text = 'Check Available Timings', command = lambda: display_timings_available(day, facility, timings_available_combobox)).pack()
+    ctk.CTkButton(main_frame, text = 'Request', command = lambda: user.request(day, facility, timing, timings_available_combobox)).pack()
+    ctk.CTkButton(main_frame, text = 'Refresh', command = lambda: display_outgoing_approvals(user, outgoing_approval_frame)).pack()
+    ctk.CTkButton(main_frame, text = '<--- HOME', command = lambda: home_page(user, card)).pack()
+    #ctk.CTkButton(main_frame, text = 'Refresh', command = lambda: refresh_window(outgoing_approval_frame)).pack()
     display_outgoing_approvals(user, outgoing_approval_frame)
 
 def approval_management_page(user, card):
@@ -413,62 +413,60 @@ def approval_management_page(user, card):
     remove_widgets()
 
     #Frames
-    main_frame = ttk.Frame(window, width = 900, height = 600)
+    main_frame = ctk.CTkFrame(window, width = 900, height = 600)
     main_frame.pack(expand = True, fill = 'both')
-    incoming_approval_frame = ttk.Frame(window, width = 900, height = 300, borderwidth = 10, relief = tk.GROOVE)
+    incoming_approval_frame = ctk.CTkFrame(window, width = 900, height = 300, borderwidth = 10, relief = ctk.CTkGROOVE)
     incoming_approval_frame.pack(expand = True, fill = 'both')
 
     #Widgets
-    ttk.Label(main_frame, text = 'Approval Request').pack()
+    ctk.CTkLabel(main_frame, text = 'Approval Request').pack()
     display_incoming_approvals(user, incoming_approval_frame, card)
 
 def booking_history_support(user):
 
     def choose_or_other():
         if other_bool.get():
-            text_box.config(state = 'normal')
-            problem_combobox.config(state = 'disabled')
+            text_box.configure(state = 'normal')
+            problem_combobox.configure(state = 'disabled')
         else:
-            text_box.config(state = 'disabled')
-            problem_combobox.config(state = 'active')
+            text_box.configure(state = 'disabled')
+            problem_combobox.configure(state = 'active')
 
     #Clear Page
     remove_widgets()
 
     #Variables
-    problem = tk.StringVar()
-    facility = tk.StringVar()
-    other_bool = tk.BooleanVar()
+    problem = ctk.StringVar()
+    facility = ctk.StringVar()
+    other_bool = ctk.CTkBooleanVar()
     problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard']
     facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
 
 
     #Frames
-    main_frame = ttk.Frame(window, width = 900, height = 600)
+    main_frame = ctk.CTkFrame(window, width = 900, height = 600)
     main_frame.pack(expand = True, fill = 'both')
-    selection_frame = ttk.Frame(main_frame)
+    selection_frame = ctk.CTkFrame(main_frame)
 
     #Grid
     selection_frame.rowconfigure(0, weight = 1)
     selection_frame.columnconfigure((0, 1), weight = 1)    
 
     #Widgets
-    ttk.Label(main_frame, text = 'Request Problem').pack()
-    ttk.Combobox(main_frame, textvariable = facility, values = facilities).pack()
+    ctk.CTkLabel(main_frame, text = 'Request Problem').pack()
+    ctk.CTkCombobox(main_frame, textvariable = facility, values = facilities).pack()
     selection_frame.pack()
-    problem_radiobutton = ttk.Radiobutton(selection_frame, value = False, variable = other_bool, command = lambda: choose_or_other())
+    problem_radiobutton = ctk.CTkRadiobutton(selection_frame, value = False, variable = other_bool, command = lambda: choose_or_other())
     problem_radiobutton.grid(row = 0, column = 0)
-    problem_combobox = ttk.Combobox(selection_frame, textvariable = problem, values = problems)
+    problem_combobox = ctk.CTkCombobox(selection_frame, textvariable = problem, values = problems)
     problem_combobox.grid(row = 0, column = 1)
-    other_radiobutton = ttk.Radiobutton(main_frame, text = 'Other', value = True, variable = other_bool, command = lambda: choose_or_other())
+    other_radiobutton = ctk.CTkRadiobutton(main_frame, text = 'Other', value = True, variable = other_bool, command = lambda: choose_or_other())
     other_radiobutton.pack()
-    text_box = tk.Text(main_frame, state = 'disabled')
+    text_box = ctk.CTkText(main_frame, state = 'disabled')
     text_box.pack()
-    submit_button = ttk.Button(main_frame, text = 'Submit', command = lambda: user.request_problem(text_box, problem, problem_combobox, facility))
+    submit_button = ctk.CTkButton(main_frame, text = 'Submit', command = lambda: user.request_problem(text_box, problem, problem_combobox, facility))
     submit_button.pack()
 
 if __name__ == '__main__':
-    from database_init import main
-    main()
     login_page()
     window.mainloop()
