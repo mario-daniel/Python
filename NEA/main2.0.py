@@ -149,14 +149,155 @@ class Incoming_Approval_Segment(ctk.CTkFrame):
                 self.incoming_approvals.remove(approval)
                 del approval
 
-class Home(ctk.CTkFrame):
+class ContentFrame(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent, width = 650, height = 550, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
+        self.current_page_index = 0
+        self.pages = [self.booking_history_support, self.approval_management_page, self.approval_request_page]
+		for F in (StartPage, Page1, Page2):
+
+			frame = F(container, self)
+
+			# initializing frame of that object from
+			# startpage, page1, page2 respectively with 
+			# for loop
+			self.frames[F] = frame 
+
+			frame.grid(row = 0, column = 0, sticky ="nsew")
+
+		self.show_frame(StartPage)
+
+    def booking_history_support(self):
+
+        def choose_or_other():
+            if other_bool.get():
+                text_box.configure(state = 'normal')
+                problem_combobox.configure(state = 'disabled')
+            else:
+                text_box.configure(state = 'disabled')
+                problem_combobox.configure(state = 'active')
+
+        #Variables
+        problem = ctk.StringVar()
+        facility = ctk.StringVar()
+        other_bool = ctk.BooleanVar()
+        problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard']
+        facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
+
+        #Widgets
+        ctk.CTkLabel(self, text = 'Request Problem').pack()
+        ctk.CTkComboBox(self, variable = facility, values = facilities).pack()
+        problem_radiobutton = ctk.CTkRadioButton(self, value = False, variable = other_bool, command = lambda: choose_or_other())
+        problem_radiobutton.pack()
+        problem_combobox = ctk.CTkComboBox(self, variable = problem, values = problems)
+        other_radiobutton = ctk.CTkRadioButton(self, text = 'Other', value = True, variable = other_bool, command = lambda: choose_or_other())
+        other_radiobutton.pack()
+        text_box = ctk.CTkTextbox(self, state = 'disabled')
+        text_box.pack()
+        submit_button = ctk.CTkButton(self, text = 'Submit', command = lambda: user.request_problem(text_box, problem, problem_combobox, facility))
+        submit_button.pack()
+
+    def approval_management_page(self):
+
+        def display_incoming_approvals(user, incoming_approval_frame, card):
+            for widget in incoming_approval_frame.winfo_children():
+                widget.destroy()
+            bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id, User.first_name, User.last_name, User.class_grade, User.user_id
+                                        FROM Facility, Timeslot, Booking, User
+                                        WHERE Booking.facility_id = Facility.facility_id
+                                        AND Booking.approved IS NULL
+                                        AND Booking.facility_id = ?
+                                        AND Booking.timeslot_id = Timeslot.timeslot_id
+                                        AND User.user_id = Booking.user_id;''', (user.facility,)).fetchall()
+            incoming_approvals = []
+            for booking in bookings:
+                if booking[6] == None: status = 'Pending'
+                elif booking[6] == 1: status = 'Approved'
+                else: status = 'Declined'
+                approval = Incoming_Approval_Segment(incoming_approval_frame, incoming_approvals, booking, card)
+                incoming_approvals.append(approval)
+
+        #Frames
+        main_frame = ctk.CTkFrame(window, width = 900, height = 600)
+        main_frame.pack(expand = True, fill = 'both')
+        incoming_approval_frame = ctk.CTkFrame(window, width = 900, height = 300, borderwidth = 10, relief = ctk.CTkGROOVE)
+        incoming_approval_frame.pack(expand = True, fill = 'both')
+
+        #Widgets
+        ctk.CTkLabel(main_frame, text = 'Approval Request').pack()
+        display_incoming_approvals(user, incoming_approval_frame, card)
+
+    def approval_request_page(self): 
+
+        def display_timings_available(day, facility, timings_available_combobox):
+            timings_available = []
+            timings = cursor.execute('''SELECT Timeslot.start_time, Timeslot.end_time 
+                                    FROM Timeslot 
+                                    JOIN Facility ON Facility.facility_id = Timeslot.facility_id 
+                                    WHERE Timeslot.day = ? 
+                                        AND Facility.facility_name = ? 
+                                        AND Timeslot.status = 0;''' ,(day.get(), facility.get())).fetchall()
+            for slot in timings:
+                timings_available.append(f'{slot[0][:-3]} - {slot[1][:-3]}')
+            timings_available_combobox.configure(state = 'active')
+            timings_available_combobox.configure(values = timings_available)
+
+        def display_outgoing_approvals(user, outgoing_approval_frame):
+            for widget in outgoing_approval_frame.winfo_children():
+                widget.destroy()
+            bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id 
+                                        FROM Facility, Timeslot, Booking 
+                                        WHERE Facility.facility_id = Booking.facility_id
+                                            AND Timeslot.timeslot_id = Booking.timeslot_id
+                                            AND Booking.user_id = ?;''', (user.user_id,)).fetchall()
+            outgoing_approvals = []
+            for booking in bookings:
+                if booking[6] == None: status = 'Pending'
+                elif booking[6] == 1: status = 'Approved'
+                else: status = 'Declined'
+                approval = Outgoing_Approval_Segment(outgoing_approval_frame, booking, status, outgoing_approvals)
+                outgoing_approvals.append(approval)
+
+        #Variables
+        facilities = ('Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
+        facility = ctk.StringVar()
+        day = ctk.StringVar()
+        timing = ctk.StringVar()
+        
+        #Frames
+        main_frame = ctk.CTkFrame(window, width = 900, height = 600)
+        main_frame.pack(expand = True, fill = 'both')
+        outgoing_approval_frame = ctk.CTkFrame(window, borderwidth = 10, relief = ctk.CTkGROOVE)
+        outgoing_approval_frame.pack(expand = True, fill = 'both')
+
+        #Widgets
+        ctk.CTkLabel(main_frame, text = 'Approval Request').pack()
+        ctk.CTkLabel(main_frame, text = 'Request a new approval').pack()
+        ctk.CTkLabel(main_frame, text = 'Pick Facility').pack()
+        ctk.CTkCombobox(main_frame, textvariable = facility, values = facilities).pack()
+        ctk.CTkLabel(main_frame, text = 'Pick Day').pack()
+        ctk.CTkCombobox(main_frame, textvariable = day, values = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')).pack()
+        ctk.CTkLabel(main_frame, text = 'Pick Timing').pack()
+        timings_available_combobox = ctk.CTkCombobox(main_frame, state = 'disabled', textvariable = timing, values = [])
+        timings_available_combobox.pack()
+        ctk.CTkButton(main_frame, text = 'Check Available Timings', command = lambda: display_timings_available(day, facility, timings_available_combobox)).pack()
+        ctk.CTkButton(main_frame, text = 'Request', command = lambda: user.request(day, facility, timing, timings_available_combobox)).pack()
+        ctk.CTkButton(main_frame, text = 'Refresh', command = lambda: display_outgoing_approvals(user, outgoing_approval_frame)).pack()
+        ctk.CTkButton(main_frame, text = '<--- HOME', command = lambda: home_page(user, card)).pack()
+        #ctk.CTkButton(main_frame, text = 'Refresh', command = lambda: refresh_window(outgoing_approval_frame)).pack()
+        display_outgoing_approvals(user, outgoing_approval_frame)
+
+    def clear_frame(self):
+        for widget in self.winfo_children():
+            widget.destroy()
+
+class SideBar(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, width = 200, height = 600, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
-        self.place(anchor = 'nw', relx = 0, rely = 0)
-        profile_icon = ctk.CTkImage(light_image = Image.open("profile.png"), size = (70,70))
-        if login_page.user.user_id[0] == 'S':
+        profile_icon = ctk.CTkImage(light_image = Image.open("Images\profile.png"), size = (70,70))
+        if self.user.user_id[0] == 'S':
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.15)
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Booking History & \nSupport', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: booking_history_support()).place(anchor = 'center', relx = 0.5, rely = 0.35)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Booking History & \nSupport', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: booking_history_support(self.window_frame)).place(anchor = 'center', relx = 0.5, rely = 0.35)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approval Request & \nOutgoing Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.5)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'My Analytics', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.63)
         else:
@@ -164,24 +305,35 @@ class Home(ctk.CTkFrame):
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Response History', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: booking_history_support()).place(anchor = 'center', relx = 0.5, rely = 0.35)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approval Management', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.5)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'School Analytics', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.63)
-        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Logout', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.93)
-        
-        self.content_frame = ctk.CTkFrame(window_frame, width = 650, height = 550, border_color = 'black', border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
-        self.content_frame.place(anchor = 'center', relx = 0.61, rely = 0.5)
+        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Logout', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.logout).place(anchor = 'center', relx = 0.5, rely = 0.93)
 
-class login_page(ctk.CTkFrame):
+class Home(ctk.CTkFrame):
     def __init__(self, parent):
+        super().__init__(parent, width = 900, height = 600, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
+        window.geometry('900x600')
+        self.place
+
+    def logout(self):
+        remove_widgets_login_register()
+        del self.user, self.card
+        LoginPage(window_frame)
+
+class LoginPage(ctk.CTkFrame):
+    def __init__(self, parent, user = None, card = None):
+        #Page Initialisation
         super().__init__(parent, width = 200, height = 600, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
+        window.geometry('600x600')
         remove_widgets_login_register()
         #Variables
         self.Id = ctk.StringVar()
         self.password = ctk.StringVar()
-
-        password_icon = ctk.CTkImage(light_image = Image.open("padlock.png"), size = (22,22))
-        id_icon = ctk.CTkImage(light_image = Image.open("id.png"), size = (22,22))
+        self.user = user
+        self.card = card
+        password_icon = ctk.CTkImage(light_image = Image.open("Images\padlock.png"), size = (22,22))
+        id_icon = ctk.CTkImage(light_image = Image.open("Images\id.png"), size = (22,22))
         
         #Frames
-        login_frame = ctk.CTkFrame(window, width = 500, height = 500, border_color = 'black', border_width = 2, fg_color = '#F0F0F0', corner_radius = 0)
+        login_frame = ctk.CTkFrame(window_frame, width = 500, height = 500, border_color = 'black', border_width = 2, fg_color = '#F0F0F0', corner_radius = 0)
         login_frame.place(anchor = 'center', relx = 0.5, rely = 0.5)
 
         #Widgets
@@ -192,14 +344,9 @@ class login_page(ctk.CTkFrame):
         ctk.CTkLabel(login_frame, text = '', image = password_icon).place(anchor = 'center', relx = 0.33, rely = 0.525)
         ctk.CTkLabel(login_frame, text = 'Password', font = ('Impact', 20)).place(anchor = 'center', relx = 0.44, rely = 0.53)
         ctk.CTkEntry(login_frame, textvariable = self.password, show = '*', width = 200, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.5, rely = 0.58)
-        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Login', text_color = 'black', fg_color = 'white', font = ('Impact', 25), command = lambda: self.login()).place(anchor = 'center', relx = 0.5, rely = 0.7)
+        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Login', text_color = 'black', fg_color = 'white', font = ('Impact', 25), command = self.login_func).place(anchor = 'center', relx = 0.5, rely = 0.7)
         ctk.CTkLabel(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.77)
-        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Don't have an account? Register Here", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: register_page(window_frame)).place(anchor = 'center', relx = 0.5, rely = 0.84)
-
-    def login(self):
-        self.login_func()
-        if self.user != None and self.card != None: 
-            remove_widgets_login_register()
+        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Don't have an account? Register Here", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: RegisterPage(window_frame)).place(anchor = 'center', relx = 0.5, rely = 0.84)
 
     def login_func(self):
         self.user_db = cursor.execute('SELECT * FROM User WHERE user_id = ?', (self.Id.get(),)).fetchall()
@@ -210,19 +357,21 @@ class login_page(ctk.CTkFrame):
             messagebox.showinfo('Login Successful', f'Welcome, {self.user_db[0][3]} {self.user_db[0][4]}')
             if self.user_db[0][0][0] == 'S':
                 self.card, self.user = Card(self.user_db[0][1], tag_id_db[0][0], tag_id_db[0][1]), Student(self.user_db[0][3], self.user_db[0][4], self.user_db[0][0], self.user_db[0][5], self.user_db[0][6], self.user_db[0][7])
+                main()
             else:
                 self.card, self.user = Card(self.user_db[0][1], tag_id_db[0][0], tag_id_db[0][1]), Teacher(self.user_db[0][3], self.user_db[0][4], self.user_db[0][0], self.user_db[0][5], self.user_db[0][6], self.user_db[0][2])
+                main()
         else:
             messagebox.showerror("Login Failed", "Incorrect username or password")
 
     def password_check(self):
         import hashlib
-        salted_password = self.password.get().encode('utf-8') + self.self.user_db[0][6]
+        salted_password = self.password.get().encode('utf-8') + self.user_db[0][6]
         hashed_password = hashlib.sha256(salted_password).hexdigest()
-        if hashed_password == self.self.user_db[0][5]: return True
+        if hashed_password == self.user_db[0][5]: return True
         else: return False
 
-class register_page(ctk.CTkFrame):
+class RegisterPage(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, width = 200, height = 600, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')    
         remove_widgets_login_register()
@@ -237,7 +386,7 @@ class register_page(ctk.CTkFrame):
         self.classes = ('9A', '9B', '9C', '9D', '10A', '10B', '10C', '10D', '11A', '11B', '11C', '11D', '12A', '12B', '12C', '12D', '13A', '13B', '13C', '13D')
 
         #Frames
-        login_frame = ctk.CTkFrame(window, width = 500, height = 500, border_color = "black", fg_color = '#F0F0F0', border_width = 2, corner_radius = 0)
+        login_frame = ctk.CTkFrame(window_frame, width = 500, height = 500, border_color = "black", fg_color = '#F0F0F0', border_width = 2, corner_radius = 0)
         login_frame.place(anchor = 'center', relx = 0.5, rely = 0.5)
 
         #Widgets
@@ -265,7 +414,7 @@ class register_page(ctk.CTkFrame):
 
         ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Register", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: self.register()).place(anchor = 'center', relx = 0.5, rely = 0.79)
         ctk.CTkLabel(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.86)
-        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Login", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: login_page(window_frame).login).place(anchor = 'center', relx = 0.5, rely = 0.93)
+        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Login", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: LoginPage(window_frame).login).place(anchor = 'center', relx = 0.5, rely = 0.93)
 
     def student_or_teacher(self):
         if self.class_facility_bool.get():
@@ -276,7 +425,7 @@ class register_page(ctk.CTkFrame):
             self.grade_facility_combobox.configure(values = self.facilities, state = 'readonly')
 
     def register(self):
-        if self.register_func(): login_page(window_frame)
+        if self.register_func(): LoginPage(window_frame)
 
     def register_func(self):
         import re
@@ -314,12 +463,55 @@ class register_page(ctk.CTkFrame):
         hashed_password = hashlib.sha256(salted_password).hexdigest()
         return hashed_password, salt
 
+# class booking_history_support(ctk.CTkFrame):
+#     def __init__(self, parent):
+#         super().__init__(parent, width = 650, height = 550, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')    
+#         #Clear Page
+#         remove_widgets_content_frame(self)
+
+#         #Variables
+#         self.problem = ctk.StringVar()
+#         self.facility = ctk.StringVar()
+#         self.other_bool = ctk.BooleanVar()
+#         self.problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard']
+#         self.facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')  
+
+#         #Widgets
+#         ctk.CTkLabel(self, text = 'Request Problem').pack()
+#         ctk.CTkComboBox(self, variable = self.facility, values = self.facilities).pack()
+#         problem_radiobutton = ctk.CTkRadioButton(self, value = False, variable = self.other_bool, command = self.choose_or_other)
+#         problem_radiobutton.pack()
+#         problem_combobox = ctk.CTkComboBox(self, variable = self.problem, values = self.problems)
+#         problem_combobox.pack()
+#         other_radiobutton = ctk.CTkRadioButton(self, text = 'Other', value = True, variable = self.other_bool, command = self.choose_or_other)
+#         other_radiobutton.pack()
+#         text_box = ctk.CTkTextbox(self, state = 'disabled')
+#         text_box.pack()
+#         submit_button = ctk.CTkButton(self, text = 'Submit', command = lambda: user.request_problem(text_box, problem, problem_combobox, facility))
+#         submit_button.pack()
+
+#     def choose_or_other(self):
+#         if self.other_bool.get():
+#             self.text_box.configure(state = 'normal')
+#             self.problem_combobox.configure(state = 'disabled')
+#         else:
+#             self.text_box.configure(state = 'disabled')
+#             self.problem_combobox.configure(state = 'active')
+
 def remove_widgets_login_register():
     #Removes every widget on the page by cyclying through them and destroying them
     for widget in window_frame.winfo_children():
         widget.destroy()
 
+def remove_widgets_content_frame(content_frame):
+    for widget in content_frame.winfo_children():
+        widget.destroy()
+
+def main():
+    if login.user != None and login.card != None:
+        sidebar = SideBar(window_frame)
+        home = Home(window_frame)
+
 if __name__ == '__main__':
-    login = login_page(window_frame)
-    Home(window_frame)
+    login = LoginPage(window_frame)
     window.mainloop()
