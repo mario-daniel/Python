@@ -153,29 +153,20 @@ class ContentFrame(ctk.CTkFrame):
     def __init__(self, parent):
         super().__init__(parent, width = 650, height = 550, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
         self.current_page_index = 0
-        self.pages = [self.booking_history_support, self.approval_management_page, self.approval_request_page]
-		for F in (StartPage, Page1, Page2):
+        self.frames = {}
+        for F in ():
+            frame = F(self)
+            self.frames[F] = frame
+            frame.place(anchor = 'center', relx = 0.61, rely = 0.5)
+        self.show_frame()
+    
+    def show_frame(self, cont):
+        frame = self.frames[cont]
+        frame.tkraise()
 
-			frame = F(container, self)
-
-			# initializing frame of that object from
-			# startpage, page1, page2 respectively with 
-			# for loop
-			self.frames[F] = frame 
-
-			frame.grid(row = 0, column = 0, sticky ="nsew")
-
-		self.show_frame(StartPage)
-
-    def booking_history_support(self):
-
-        def choose_or_other():
-            if other_bool.get():
-                text_box.configure(state = 'normal')
-                problem_combobox.configure(state = 'disabled')
-            else:
-                text_box.configure(state = 'disabled')
-                problem_combobox.configure(state = 'active')
+class booking_history_support(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent, width = 650, height = 550, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
 
         #Variables
         problem = ctk.StringVar()
@@ -197,67 +188,47 @@ class ContentFrame(ctk.CTkFrame):
         submit_button = ctk.CTkButton(self, text = 'Submit', command = lambda: user.request_problem(text_box, problem, problem_combobox, facility))
         submit_button.pack()
 
-    def approval_management_page(self):
+    def choose_or_other():
+        if other_bool.get():
+            text_box.configure(state = 'normal')
+            problem_combobox.configure(state = 'disabled')
+        else:
+            text_box.configure(state = 'disabled')
+            problem_combobox.configure(state = 'active')
 
-        def display_incoming_approvals(user, incoming_approval_frame, card):
-            for widget in incoming_approval_frame.winfo_children():
-                widget.destroy()
-            bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id, User.first_name, User.last_name, User.class_grade, User.user_id
-                                        FROM Facility, Timeslot, Booking, User
-                                        WHERE Booking.facility_id = Facility.facility_id
-                                        AND Booking.approved IS NULL
-                                        AND Booking.facility_id = ?
-                                        AND Booking.timeslot_id = Timeslot.timeslot_id
-                                        AND User.user_id = Booking.user_id;''', (user.facility,)).fetchall()
-            incoming_approvals = []
-            for booking in bookings:
-                if booking[6] == None: status = 'Pending'
-                elif booking[6] == 1: status = 'Approved'
-                else: status = 'Declined'
-                approval = Incoming_Approval_Segment(incoming_approval_frame, incoming_approvals, booking, card)
-                incoming_approvals.append(approval)
+class approval_management_page(ctk.CTkFrame):
+    def __init__(self, parent):
+        super().__init__(parent, width = 650, height = 550, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
 
         #Frames
-        main_frame = ctk.CTkFrame(window, width = 900, height = 600)
-        main_frame.pack(expand = True, fill = 'both')
-        incoming_approval_frame = ctk.CTkFrame(window, width = 900, height = 300, borderwidth = 10, relief = ctk.CTkGROOVE)
+        incoming_approval_frame = ctk.CTkFrame(self, width = 900, height = 300, borderwidth = 10, relief = ctk.CTkGROOVE)
         incoming_approval_frame.pack(expand = True, fill = 'both')
 
         #Widgets
-        ctk.CTkLabel(main_frame, text = 'Approval Request').pack()
-        display_incoming_approvals(user, incoming_approval_frame, card)
+        ctk.CTkLabel(self, text = 'Approval Request').pack()
+        self.display_incoming_approvals(self)
 
-    def approval_request_page(self): 
+    def display_incoming_approvals():
+        for widget in incoming_approval_frame.winfo_children():
+            widget.destroy()
+        bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id, User.first_name, User.last_name, User.class_grade, User.user_id
+                                    FROM Facility, Timeslot, Booking, User
+                                    WHERE Booking.facility_id = Facility.facility_id
+                                    AND Booking.approved IS NULL
+                                    AND Booking.facility_id = ?
+                                    AND Booking.timeslot_id = Timeslot.timeslot_id
+                                    AND User.user_id = Booking.user_id;''', (user.facility,)).fetchall()
+        incoming_approvals = []
+        for booking in bookings:
+            if booking[6] == None: status = 'Pending'
+            elif booking[6] == 1: status = 'Approved'
+            else: status = 'Declined'
+            approval = Incoming_Approval_Segment(incoming_approval_frame, incoming_approvals, booking, card)
+            incoming_approvals.append(approval)
 
-        def display_timings_available(day, facility, timings_available_combobox):
-            timings_available = []
-            timings = cursor.execute('''SELECT Timeslot.start_time, Timeslot.end_time 
-                                    FROM Timeslot 
-                                    JOIN Facility ON Facility.facility_id = Timeslot.facility_id 
-                                    WHERE Timeslot.day = ? 
-                                        AND Facility.facility_name = ? 
-                                        AND Timeslot.status = 0;''' ,(day.get(), facility.get())).fetchall()
-            for slot in timings:
-                timings_available.append(f'{slot[0][:-3]} - {slot[1][:-3]}')
-            timings_available_combobox.configure(state = 'active')
-            timings_available_combobox.configure(values = timings_available)
-
-        def display_outgoing_approvals(user, outgoing_approval_frame):
-            for widget in outgoing_approval_frame.winfo_children():
-                widget.destroy()
-            bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id 
-                                        FROM Facility, Timeslot, Booking 
-                                        WHERE Facility.facility_id = Booking.facility_id
-                                            AND Timeslot.timeslot_id = Booking.timeslot_id
-                                            AND Booking.user_id = ?;''', (user.user_id,)).fetchall()
-            outgoing_approvals = []
-            for booking in bookings:
-                if booking[6] == None: status = 'Pending'
-                elif booking[6] == 1: status = 'Approved'
-                else: status = 'Declined'
-                approval = Outgoing_Approval_Segment(outgoing_approval_frame, booking, status, outgoing_approvals)
-                outgoing_approvals.append(approval)
-
+class approval_request_page(ctk.CTkFrame): 
+    def __init__(self, parent):
+        super().__init__(parent, width = 650, height = 550, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
         #Variables
         facilities = ('Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
         facility = ctk.StringVar()
@@ -265,29 +236,56 @@ class ContentFrame(ctk.CTkFrame):
         timing = ctk.StringVar()
         
         #Frames
-        main_frame = ctk.CTkFrame(window, width = 900, height = 600)
-        main_frame.pack(expand = True, fill = 'both')
-        outgoing_approval_frame = ctk.CTkFrame(window, borderwidth = 10, relief = ctk.CTkGROOVE)
+        outgoing_approval_frame = ctk.CTkFrame(self, borderwidth = 10, relief = ctk.CTkGROOVE)
         outgoing_approval_frame.pack(expand = True, fill = 'both')
 
         #Widgets
-        ctk.CTkLabel(main_frame, text = 'Approval Request').pack()
-        ctk.CTkLabel(main_frame, text = 'Request a new approval').pack()
-        ctk.CTkLabel(main_frame, text = 'Pick Facility').pack()
-        ctk.CTkCombobox(main_frame, textvariable = facility, values = facilities).pack()
-        ctk.CTkLabel(main_frame, text = 'Pick Day').pack()
-        ctk.CTkCombobox(main_frame, textvariable = day, values = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')).pack()
-        ctk.CTkLabel(main_frame, text = 'Pick Timing').pack()
-        timings_available_combobox = ctk.CTkCombobox(main_frame, state = 'disabled', textvariable = timing, values = [])
+        ctk.CTkLabel(self, text = 'Approval Request').pack()
+        ctk.CTkLabel(self, text = 'Request a new approval').pack()
+        ctk.CTkLabel(self, text = 'Pick Facility').pack()
+        ctk.CTkCombobox(self, textvariable = facility, values = facilities).pack()
+        ctk.CTkLabel(self, text = 'Pick Day').pack()
+        ctk.CTkCombobox(self, textvariable = day, values = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')).pack()
+        ctk.CTkLabel(self, text = 'Pick Timing').pack()
+        timings_available_combobox = ctk.CTkCombobox(self, state = 'disabled', textvariable = timing, values = [])
         timings_available_combobox.pack()
-        ctk.CTkButton(main_frame, text = 'Check Available Timings', command = lambda: display_timings_available(day, facility, timings_available_combobox)).pack()
-        ctk.CTkButton(main_frame, text = 'Request', command = lambda: user.request(day, facility, timing, timings_available_combobox)).pack()
-        ctk.CTkButton(main_frame, text = 'Refresh', command = lambda: display_outgoing_approvals(user, outgoing_approval_frame)).pack()
-        ctk.CTkButton(main_frame, text = '<--- HOME', command = lambda: home_page(user, card)).pack()
+        ctk.CTkButton(self, text = 'Check Available Timings', command = lambda: display_timings_available(day, facility, timings_available_combobox)).pack()
+        ctk.CTkButton(self, text = 'Request', command = lambda: user.request(day, facility, timing, timings_available_combobox)).pack()
+        ctk.CTkButton(self, text = 'Refresh', command = lambda: display_outgoing_approvals(user, outgoing_approval_frame)).pack()
+        ctk.CTkButton(self, text = '<--- HOME', command = lambda: home_page(user, card)).pack()
         #ctk.CTkButton(main_frame, text = 'Refresh', command = lambda: refresh_window(outgoing_approval_frame)).pack()
-        display_outgoing_approvals(user, outgoing_approval_frame)
+        self.display_outgoing_approvals(user, outgoing_approval_frame)
 
-    def clear_frame(self):
+    def display_timings_available(self, day, facility, timings_available_combobox):
+        timings_available = []
+        timings = cursor.execute('''SELECT Timeslot.start_time, Timeslot.end_time 
+                                FROM Timeslot 
+                                JOIN Facility ON Facility.facility_id = Timeslot.facility_id 
+                                WHERE Timeslot.day = ? 
+                                    AND Facility.facility_name = ? 
+                                    AND Timeslot.status = 0;''' ,(day.get(), facility.get())).fetchall()
+        for slot in timings:
+            timings_available.append(f'{slot[0][:-3]} - {slot[1][:-3]}')
+        timings_available_combobox.configure(state = 'active')
+        timings_available_combobox.configure(values = timings_available)
+
+    def display_outgoing_approvals(self, user, outgoing_approval_frame):
+        for widget in outgoing_approval_frame.winfo_children():
+            widget.destroy()
+        bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id 
+                                    FROM Facility, Timeslot, Booking 
+                                    WHERE Facility.facility_id = Booking.facility_id
+                                        AND Timeslot.timeslot_id = Booking.timeslot_id
+                                        AND Booking.user_id = ?;''', (user.user_id,)).fetchall()
+        outgoing_approvals = []
+        for booking in bookings:
+            if booking[6] == None: status = 'Pending'
+            elif booking[6] == 1: status = 'Approved'
+            else: status = 'Declined'
+            approval = Outgoing_Approval_Segment(outgoing_approval_frame, booking, status, outgoing_approvals)
+            outgoing_approvals.append(approval)
+
+def clear_frame(self):
         for widget in self.winfo_children():
             widget.destroy()
 
