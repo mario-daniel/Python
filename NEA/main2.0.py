@@ -23,51 +23,6 @@ class Student:
         self.salt = salt
         self.grade = grade
 
-    def get_time(self, day, timing):
-        timing_format = timing.get()
-        for index in range(len(timing_format)):
-            if timing_format[index] == '-':
-                self.start_time = f'{timing_format[:index - 1].strip()}:00'
-                self.end_time = f'{timing_format[index + 1:].strip()}:00'
-        from datetime import datetime, timedelta
-        self.day = day.get()
-        today = datetime.today()
-        Day_num = {'Monday' : 0, 'Tuesday' : 1, 'Wednesday' : 2, 'Thursday' : 3, 'Friday' : 4}
-        days_delta = (Day_num[self.day] - today.weekday()) % 7
-        self.date = (today + timedelta(days=days_delta)).strftime('%Y-%m-%d')
-    
-    def request(self, day, facility, timing, timings_available_combobox):
-        self.get_time(day, timing)
-        facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?', (facility.get(), )).fetchall()
-        self.timeslot_id_db = cursor.execute('SELECT timeslot_id FROM Timeslot WHERE day = ? AND facility_id = ? AND start_time = ? AND end_time = ?', (self.day, facility_id_db[0][0], self.start_time, self.end_time)).fetchall()
-        cursor.execute('INSERT INTO Booking (facility_id, user_id, timeslot_id, booking_date) VALUES (?, ?, ?, ?)', (facility_id_db[0][0], self.user_id, self.timeslot_id_db[0][0], self.date))
-        conn.commit()
-        self.update_table()
-        timing.set('')
-        timings_available_combobox.configure(state = 'disabled')
-        messagebox.showinfo('Request Successful', f'Requested from {self.start_time} to {self.end_time} on {self.day} {self.date}')
-
-    def update_table(self):
-        cursor.execute('UPDATE Timeslot SET status = NULL WHERE timeslot_id = ?', (self.timeslot_id_db[0][0],))
-        conn.commit()
-
-    def request_problem(self, text_box, problem, problem_combobox, facility):
-        other_problem = text_box.get(1.0, "end-1c")
-        if facility.get() != '' or other_problem != '':
-            problem_state = problem_combobox['state'].string
-            facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?;', (facility.get(),)).fetchall()
-            if problem_state == 'normal':
-                issue_id_db = cursor.execute('SELECT issue_id FROM Issue WHERE issue = ?;', (problem.get(),)).fetchall()
-                cursor.execute('INSERT INTO IssueRequest (issue_id, facility_id, resolved) VALUES (?, ?, FALSE);', (issue_id_db[0][0], facility_id_db[0][0]))
-                conn.commit()
-                
-            else:
-                cursor.execute('INSERT INTO IssueRequest (issue_id, facility_id, other_issue_reason, resolved) VALUES (0, ?, ?, FALSE);', (facility_id_db[0][0], other_problem))
-                conn.commit()
-            messagebox.showinfo('Request Successful', 'Your issue will be fixed.')
-        else:
-            messagebox.showerror("Request Failed", "All fields must be filled out.")
-
 class Teacher:
     def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = '', facility = 0):
         super().__init__(first_name, last_name, user_id,  hashed_password, salt)
@@ -150,66 +105,98 @@ class Incoming_Approval_Segment(ctk.CTkFrame):
                 del approval
 
 class ContentFrame(ctk.CTkFrame):
-    def __init__(self, parent):
+    def __init__(self, parent, user, card):
         super().__init__(parent, width = 650, height = 550, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
-        self.current_page_index = 0
-        self.frames = {}
-        for F in ():
-            frame = F(self)
-            self.frames[F] = frame
-            frame.place(anchor = 'center', relx = 0.61, rely = 0.5)
-        self.show_frame()
-    
-    def show_frame(self, cont):
-        frame = self.frames[cont]
-        frame.tkraise()
+        self.user = user
+        self.card = card
 
-class booking_history_support(ctk.CTkFrame):
-    def __init__(self, parent):
-        super().__init__(parent, width = 650, height = 550, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
-
+    def booking_history_support(self):
+        self.clear_frame
         #Variables
-        problem = ctk.StringVar()
-        facility = ctk.StringVar()
-        other_bool = ctk.BooleanVar()
-        problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard']
-        facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
+        self.problem = ctk.StringVar()
+        self.facility = ctk.StringVar()
+        self.other_bool = ctk.BooleanVar()
+        self.problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard']
+        self.facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
 
         #Widgets
         ctk.CTkLabel(self, text = 'Request Problem').pack()
-        ctk.CTkComboBox(self, variable = facility, values = facilities).pack()
-        problem_radiobutton = ctk.CTkRadioButton(self, value = False, variable = other_bool, command = lambda: choose_or_other())
-        problem_radiobutton.pack()
-        problem_combobox = ctk.CTkComboBox(self, variable = problem, values = problems)
-        other_radiobutton = ctk.CTkRadioButton(self, text = 'Other', value = True, variable = other_bool, command = lambda: choose_or_other())
-        other_radiobutton.pack()
-        text_box = ctk.CTkTextbox(self, state = 'disabled')
-        text_box.pack()
-        submit_button = ctk.CTkButton(self, text = 'Submit', command = lambda: user.request_problem(text_box, problem, problem_combobox, facility))
-        submit_button.pack()
+        ctk.CTkComboBox(self, variable = self.facility, values = self.facilities).pack()
+        self.problem_radiobutton = ctk.CTkRadioButton(self, value = False, variable = self.other_bool, command = self.choose_or_other)
+        self.problem_radiobutton.pack()
+        self.problem_combobox = ctk.CTkComboBox(self, variable = self.problem, values = self.problems)
+        self.other_radiobutton = ctk.CTkRadioButton(self, text = 'Other', value = True, variable = self.other_bool, command = self.choose_or_other)
+        self.other_radiobutton.pack()
+        self.text_box = ctk.CTkTextbox(self, state = 'disabled')
+        self.text_box.pack()
+        self.submit_button = ctk.CTkButton(self, text = 'Submit', command = self.request_problem)
+        self.submit_button.pack()
 
-    def choose_or_other():
-        if other_bool.get():
-            text_box.configure(state = 'normal')
-            problem_combobox.configure(state = 'disabled')
+    def get_time(self):
+        timing_format = self.timing.get()
+        for index in range(len(timing_format)):
+            if timing_format[index] == '-':
+                self.start_time = f'{timing_format[:index - 1].strip()}:00'
+                self.end_time = f'{timing_format[index + 1:].strip()}:00'
+        from datetime import datetime, timedelta
+        self.day = self.day.get()
+        today = datetime.today()
+        Day_num = {'Monday' : 0, 'Tuesday' : 1, 'Wednesday' : 2, 'Thursday' : 3, 'Friday' : 4}
+        days_delta = (Day_num[self.day] - today.weekday()) % 7
+        self.date = (today + timedelta(days=days_delta)).strftime('%Y-%m-%d')
+
+    def request(self):
+        self.get_time(self)
+        facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?', (self.facility.get(), )).fetchall()
+        self.timeslot_id_db = cursor.execute('SELECT timeslot_id FROM Timeslot WHERE day = ? AND facility_id = ? AND start_time = ? AND end_time = ?', (self.day, facility_id_db[0][0], self.start_time, self.end_time)).fetchall()
+        cursor.execute('INSERT INTO Booking (facility_id, user_id, timeslot_id, booking_date) VALUES (?, ?, ?, ?)', (facility_id_db[0][0], self.user_id, self.timeslot_id_db[0][0], self.date))
+        conn.commit()
+        self.update_table()
+        self.timing.set('')
+        self.timings_available_combobox.configure(state = 'disabled')
+        messagebox.showinfo('Request Successful', f'Requested from {self.start_time} to {self.end_time} on {self.day} {self.date}')
+
+    def update_table(self):
+        cursor.execute('UPDATE Timeslot SET status = NULL WHERE timeslot_id = ?', (self.timeslot_id_db[0][0],))
+        conn.commit()
+
+    def request_problem(self):
+        other_problem = self.text_box.get(1.0, "end-1c")
+        if self.facility.get() != '' or other_problem != '':
+            problem_state = self.problem_combobox['state'].string
+            facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?;', (self.facility.get(),)).fetchall()
+            if problem_state == 'normal':
+                issue_id_db = cursor.execute('SELECT issue_id FROM Issue WHERE issue = ?;', (self.problem.get(),)).fetchall()
+                cursor.execute('INSERT INTO IssueRequest (issue_id, facility_id, resolved) VALUES (?, ?, FALSE);', (issue_id_db[0][0], facility_id_db[0][0]))
+                conn.commit()
+                
+            else:
+                cursor.execute('INSERT INTO IssueRequest (issue_id, facility_id, other_issue_reason, resolved) VALUES (0, ?, ?, FALSE);', (self.facility_id_db[0][0], self.other_problem))
+                conn.commit()
+            messagebox.showinfo('Request Successful', 'Your issue will be fixed.')
         else:
-            text_box.configure(state = 'disabled')
-            problem_combobox.configure(state = 'active')
+            messagebox.showerror("Request Failed", "All fields must be filled out.")
 
-class approval_management_page(ctk.CTkFrame):
-    def __init__(self, parent):
-        super().__init__(parent, width = 650, height = 550, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
+    def choose_or_other(self):
+        if self.other_bool.get():
+            self.text_box.configure(state = 'readonly')
+            self.problem_combobox.configure(state = 'disabled')
+        else:
+            self.text_box.configure(state = 'disabled')
+            self.problem_combobox.configure(state = 'readonly')
 
+    def approval_management_page(self):
+        self.clear_frame
         #Frames
-        incoming_approval_frame = ctk.CTkFrame(self, width = 900, height = 300, borderwidth = 10, relief = ctk.CTkGROOVE)
-        incoming_approval_frame.pack(expand = True, fill = 'both')
+        self.incoming_approval_frame = ctk.CTkFrame(self, width = 900, height = 300, borderwidth = 10, relief = ctk.CTkGROOVE)
+        self.incoming_approval_frame.pack(expand = True, fill = 'both')
 
         #Widgets
         ctk.CTkLabel(self, text = 'Approval Request').pack()
         self.display_incoming_approvals(self)
 
-    def display_incoming_approvals():
-        for widget in incoming_approval_frame.winfo_children():
+    def display_incoming_approvals(self):
+        for widget in self.incoming_approval_frame.winfo_children():
             widget.destroy()
         bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id, User.first_name, User.last_name, User.class_grade, User.user_id
                                     FROM Facility, Timeslot, Booking, User
@@ -217,104 +204,91 @@ class approval_management_page(ctk.CTkFrame):
                                     AND Booking.approved IS NULL
                                     AND Booking.facility_id = ?
                                     AND Booking.timeslot_id = Timeslot.timeslot_id
-                                    AND User.user_id = Booking.user_id;''', (user.facility,)).fetchall()
+                                    AND User.user_id = Booking.user_id;''', (self.user.facility,)).fetchall()
         incoming_approvals = []
         for booking in bookings:
             if booking[6] == None: status = 'Pending'
             elif booking[6] == 1: status = 'Approved'
             else: status = 'Declined'
-            approval = Incoming_Approval_Segment(incoming_approval_frame, incoming_approvals, booking, card)
+            approval = Incoming_Approval_Segment(self.incoming_approval_frame, incoming_approvals, booking, self.card)
             incoming_approvals.append(approval)
 
-class approval_request_page(ctk.CTkFrame): 
-    def __init__(self, parent):
-        super().__init__(parent, width = 650, height = 550, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
+    def approval_request_page(self):
+        self.clear_frame
         #Variables
-        facilities = ('Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
-        facility = ctk.StringVar()
-        day = ctk.StringVar()
-        timing = ctk.StringVar()
+        self.facilities = ('Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
+        self.facility = ctk.StringVar()
+        self.day = ctk.StringVar()
+        self.timing = ctk.StringVar()
         
         #Frames
-        outgoing_approval_frame = ctk.CTkFrame(self, borderwidth = 10, relief = ctk.CTkGROOVE)
+        outgoing_approval_frame = ctk.CTkFrame(self, border_width= 2, border_color = 'black')
         outgoing_approval_frame.pack(expand = True, fill = 'both')
 
         #Widgets
         ctk.CTkLabel(self, text = 'Approval Request').pack()
         ctk.CTkLabel(self, text = 'Request a new approval').pack()
         ctk.CTkLabel(self, text = 'Pick Facility').pack()
-        ctk.CTkCombobox(self, textvariable = facility, values = facilities).pack()
+        ctk.CTkComboBox(self, variable = self.facility, values = self.facilities).pack()
         ctk.CTkLabel(self, text = 'Pick Day').pack()
-        ctk.CTkCombobox(self, textvariable = day, values = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')).pack()
+        ctk.CTkComboBox(self, variable = self.day, values = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')).pack()
         ctk.CTkLabel(self, text = 'Pick Timing').pack()
-        timings_available_combobox = ctk.CTkCombobox(self, state = 'disabled', textvariable = timing, values = [])
-        timings_available_combobox.pack()
-        ctk.CTkButton(self, text = 'Check Available Timings', command = lambda: display_timings_available(day, facility, timings_available_combobox)).pack()
-        ctk.CTkButton(self, text = 'Request', command = lambda: user.request(day, facility, timing, timings_available_combobox)).pack()
-        ctk.CTkButton(self, text = 'Refresh', command = lambda: display_outgoing_approvals(user, outgoing_approval_frame)).pack()
-        ctk.CTkButton(self, text = '<--- HOME', command = lambda: home_page(user, card)).pack()
+        self.timings_available_combobox = ctk.CTkComboBox(self, state = 'disabled', variable = self.timing, values = [])
+        self.timings_available_combobox.pack()
+        ctk.CTkButton(self, text = 'Check Available Timings', command = self.display_timings_available).pack()
+        ctk.CTkButton(self, text = 'Request', command = self.request).pack()
+        ctk.CTkButton(self, text = 'Refresh', command = self.display_outgoing_approvals).pack()
         #ctk.CTkButton(main_frame, text = 'Refresh', command = lambda: refresh_window(outgoing_approval_frame)).pack()
-        self.display_outgoing_approvals(user, outgoing_approval_frame)
+        self.display_outgoing_approvals
 
-    def display_timings_available(self, day, facility, timings_available_combobox):
+    def display_timings_available(self):
         timings_available = []
         timings = cursor.execute('''SELECT Timeslot.start_time, Timeslot.end_time 
                                 FROM Timeslot 
                                 JOIN Facility ON Facility.facility_id = Timeslot.facility_id 
                                 WHERE Timeslot.day = ? 
                                     AND Facility.facility_name = ? 
-                                    AND Timeslot.status = 0;''' ,(day.get(), facility.get())).fetchall()
+                                    AND Timeslot.status = 0;''' ,(self.day.get(), self.facility.get())).fetchall()
         for slot in timings:
             timings_available.append(f'{slot[0][:-3]} - {slot[1][:-3]}')
-        timings_available_combobox.configure(state = 'active')
-        timings_available_combobox.configure(values = timings_available)
+        self.timings_available_combobox.configure(state = 'readonly')
+        self.timings_available_combobox.configure(values = timings_available)
 
-    def display_outgoing_approvals(self, user, outgoing_approval_frame):
-        for widget in outgoing_approval_frame.winfo_children():
+    def display_outgoing_approvals(self):
+        for widget in self.outgoing_approval_frame.winfo_children():
             widget.destroy()
         bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id 
                                     FROM Facility, Timeslot, Booking 
                                     WHERE Facility.facility_id = Booking.facility_id
                                         AND Timeslot.timeslot_id = Booking.timeslot_id
-                                        AND Booking.user_id = ?;''', (user.user_id,)).fetchall()
+                                        AND Booking.user_id = ?;''', (self.user.user_id,)).fetchall()
         outgoing_approvals = []
         for booking in bookings:
             if booking[6] == None: status = 'Pending'
             elif booking[6] == 1: status = 'Approved'
             else: status = 'Declined'
-            approval = Outgoing_Approval_Segment(outgoing_approval_frame, booking, status, outgoing_approvals)
+            approval = Outgoing_Approval_Segment(self.outgoing_approval_frame, booking, status, outgoing_approvals)
             outgoing_approvals.append(approval)
 
-def clear_frame(self):
+    def clear_frame(self):
         for widget in self.winfo_children():
             widget.destroy()
 
 class SideBar(ctk.CTkFrame):
-    def __init__(self, parent):
+    def __init__(self, parent, login, page):
         super().__init__(parent, width = 200, height = 600, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
         profile_icon = ctk.CTkImage(light_image = Image.open("Images\profile.png"), size = (70,70))
-        if self.user.user_id[0] == 'S':
+        if login.user.user_id[0] == 'S':
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.15)
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Booking History & \nSupport', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: booking_history_support(self.window_frame)).place(anchor = 'center', relx = 0.5, rely = 0.35)
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approval Request & \nOutgoing Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.5)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Booking History & \nSupport', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.booking_history_support).place(anchor = 'center', relx = 0.5, rely = 0.35)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approval Request & \nOutgoing Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approval_request_page).place(anchor = 'center', relx = 0.5, rely = 0.5)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'My Analytics', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.63)
         else:
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.15)
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Response History', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: booking_history_support()).place(anchor = 'center', relx = 0.5, rely = 0.35)
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approval Management', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.5)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Response History', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.booking_history_support).place(anchor = 'center', relx = 0.5, rely = 0.35)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approval Management', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approval_management_page).place(anchor = 'center', relx = 0.5, rely = 0.5)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'School Analytics', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.63)
-        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Logout', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.logout).place(anchor = 'center', relx = 0.5, rely = 0.93)
-
-class Home(ctk.CTkFrame):
-    def __init__(self, parent):
-        super().__init__(parent, width = 900, height = 600, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
-        window.geometry('900x600')
-        self.place
-
-    def logout(self):
-        remove_widgets_login_register()
-        del self.user, self.card
-        LoginPage(window_frame)
+        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Logout', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = login.logout_func).place(anchor = 'center', relx = 0.5, rely = 0.93)
 
 class LoginPage(ctk.CTkFrame):
     def __init__(self, parent, user = None, card = None):
@@ -355,10 +329,10 @@ class LoginPage(ctk.CTkFrame):
             messagebox.showinfo('Login Successful', f'Welcome, {self.user_db[0][3]} {self.user_db[0][4]}')
             if self.user_db[0][0][0] == 'S':
                 self.card, self.user = Card(self.user_db[0][1], tag_id_db[0][0], tag_id_db[0][1]), Student(self.user_db[0][3], self.user_db[0][4], self.user_db[0][0], self.user_db[0][5], self.user_db[0][6], self.user_db[0][7])
-                main()
+                main(self)
             else:
                 self.card, self.user = Card(self.user_db[0][1], tag_id_db[0][0], tag_id_db[0][1]), Teacher(self.user_db[0][3], self.user_db[0][4], self.user_db[0][0], self.user_db[0][5], self.user_db[0][6], self.user_db[0][2])
-                main()
+                main(self)
         else:
             messagebox.showerror("Login Failed", "Incorrect username or password")
 
@@ -368,6 +342,12 @@ class LoginPage(ctk.CTkFrame):
         hashed_password = hashlib.sha256(salted_password).hexdigest()
         if hashed_password == self.user_db[0][5]: return True
         else: return False
+
+    def logout_func(self):
+        messagebox.showinfo('Logout Successful', f'Goodbye, {self.user_db[0][3]} {self.user_db[0][4]}')
+        remove_widgets_login_register()
+        del self
+        main(login = None)
 
 class RegisterPage(ctk.CTkFrame):
     def __init__(self, parent):
@@ -412,7 +392,7 @@ class RegisterPage(ctk.CTkFrame):
 
         ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Register", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: self.register()).place(anchor = 'center', relx = 0.5, rely = 0.79)
         ctk.CTkLabel(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.86)
-        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Login", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: LoginPage(window_frame).login).place(anchor = 'center', relx = 0.5, rely = 0.93)
+        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Login", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: LoginPage(window_frame)).place(anchor = 'center', relx = 0.5, rely = 0.93)
 
     def student_or_teacher(self):
         if self.class_facility_bool.get():
@@ -461,55 +441,22 @@ class RegisterPage(ctk.CTkFrame):
         hashed_password = hashlib.sha256(salted_password).hexdigest()
         return hashed_password, salt
 
-# class booking_history_support(ctk.CTkFrame):
-#     def __init__(self, parent):
-#         super().__init__(parent, width = 650, height = 550, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')    
-#         #Clear Page
-#         remove_widgets_content_frame(self)
-
-#         #Variables
-#         self.problem = ctk.StringVar()
-#         self.facility = ctk.StringVar()
-#         self.other_bool = ctk.BooleanVar()
-#         self.problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard']
-#         self.facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')  
-
-#         #Widgets
-#         ctk.CTkLabel(self, text = 'Request Problem').pack()
-#         ctk.CTkComboBox(self, variable = self.facility, values = self.facilities).pack()
-#         problem_radiobutton = ctk.CTkRadioButton(self, value = False, variable = self.other_bool, command = self.choose_or_other)
-#         problem_radiobutton.pack()
-#         problem_combobox = ctk.CTkComboBox(self, variable = self.problem, values = self.problems)
-#         problem_combobox.pack()
-#         other_radiobutton = ctk.CTkRadioButton(self, text = 'Other', value = True, variable = self.other_bool, command = self.choose_or_other)
-#         other_radiobutton.pack()
-#         text_box = ctk.CTkTextbox(self, state = 'disabled')
-#         text_box.pack()
-#         submit_button = ctk.CTkButton(self, text = 'Submit', command = lambda: user.request_problem(text_box, problem, problem_combobox, facility))
-#         submit_button.pack()
-
-#     def choose_or_other(self):
-#         if self.other_bool.get():
-#             self.text_box.configure(state = 'normal')
-#             self.problem_combobox.configure(state = 'disabled')
-#         else:
-#             self.text_box.configure(state = 'disabled')
-#             self.problem_combobox.configure(state = 'active')
-
 def remove_widgets_login_register():
     #Removes every widget on the page by cyclying through them and destroying them
     for widget in window_frame.winfo_children():
         widget.destroy()
 
-def remove_widgets_content_frame(content_frame):
-    for widget in content_frame.winfo_children():
-        widget.destroy()
-
-def main():
-    if login.user != None and login.card != None:
-        sidebar = SideBar(window_frame)
-        home = Home(window_frame)
+def main(login = None):
+    if login != None:
+        remove_widgets_login_register()
+        window.geometry('900x600')
+        page = ContentFrame(window_frame, login.user, login.card)
+        sidebar = SideBar(window_frame, login, page)
+        sidebar.place(anchor = 'nw', relx = 0, rely = 0)
+        page.place(anchor = 'center', relx = 0.61, rely = 0.5)
+    else:
+        login = LoginPage(window_frame)
 
 if __name__ == '__main__':
-    login = LoginPage(window_frame)
+    main(login = None)
     window.mainloop()
