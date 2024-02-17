@@ -111,26 +111,28 @@ class ContentFrame(ctk.CTkFrame):
         self.card = card
 
     def booking_history_support(self):
-        self.clear_frame
+        self.clear_frame()
         #Variables
         self.problem = ctk.StringVar()
         self.facility = ctk.StringVar()
         self.other_bool = ctk.BooleanVar()
-        self.problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard']
+        self.problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard', 'Other']
         self.facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
 
         #Widgets
-        ctk.CTkLabel(self, text = 'Request Problem').pack()
-        ctk.CTkComboBox(self, variable = self.facility, values = self.facilities).pack()
-        self.problem_radiobutton = ctk.CTkRadioButton(self, value = False, variable = self.other_bool, command = self.choose_or_other)
-        self.problem_radiobutton.pack()
-        self.problem_combobox = ctk.CTkComboBox(self, variable = self.problem, values = self.problems)
-        self.other_radiobutton = ctk.CTkRadioButton(self, text = 'Other', value = True, variable = self.other_bool, command = self.choose_or_other)
-        self.other_radiobutton.pack()
-        self.text_box = ctk.CTkTextbox(self, state = 'disabled')
-        self.text_box.pack()
+        ctk.CTkLabel(self, text = 'Facility Support', font = ('Impact', 90)).place(anchor = 'center', relx = 0.5, rely = 0.15)
+        ctk.CTkLabel(self, text = 'Choose Facility', font = ('Impact', 40)).place(anchor = 'center', relx = 0.3, rely = 0.35)
+        ctk.CTkComboBox(self, variable = self.facility, values = self.facilities, width = 250).place(anchor = 'center', relx = 0.7, rely = 0.36)
+        ctk.CTkLabel(self, text = 'Choose Problem', font = ('Impact', 40)).place(anchor = 'center', relx = 0.3, rely = 0.5)
+        ctk.CTkComboBox(self, variable = self.problem, values = self.problems, width = 250, command = self.choose_or_other).place(anchor = 'center', relx = 0.7, rely = 0.51)
+        self.other_entry = ctk.CTkEntry(self, state = 'disabled')
         self.submit_button = ctk.CTkButton(self, text = 'Submit', command = self.request_problem)
-        self.submit_button.pack()
+        self.submit_button.place(anchor = 'center', relx = 0.5, rely = 0.55)
+
+    def choose_or_other(self):
+        if self.problem.get() == 'Other':
+            self.other_entry.place(anchor = 'center', relx = 0.5, rely = 0.8)
+            self.submit_button.place(anchor = 'center', relx = 0.5, rely = 0.9)
 
     def get_time(self):
         timing_format = self.timing.get()
@@ -161,8 +163,7 @@ class ContentFrame(ctk.CTkFrame):
         conn.commit()
 
     def request_problem(self):
-        other_problem = self.text_box.get(1.0, "end-1c")
-        if self.facility.get() != '' or other_problem != '':
+        if self.facility.get() != '' or self.other_entry.get() != '':
             problem_state = self.problem_combobox['state'].string
             facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?;', (self.facility.get(),)).fetchall()
             if problem_state == 'normal':
@@ -171,22 +172,14 @@ class ContentFrame(ctk.CTkFrame):
                 conn.commit()
                 
             else:
-                cursor.execute('INSERT INTO IssueRequest (issue_id, facility_id, other_issue_reason, resolved) VALUES (0, ?, ?, FALSE);', (self.facility_id_db[0][0], self.other_problem))
+                cursor.execute('INSERT INTO IssueRequest (issue_id, facility_id, other_issue_reason, resolved) VALUES (0, ?, ?, FALSE);', (self.facility_id_db[0][0], self.other_entry.get()))
                 conn.commit()
             messagebox.showinfo('Request Successful', 'Your issue will be fixed.')
         else:
             messagebox.showerror("Request Failed", "All fields must be filled out.")
 
-    def choose_or_other(self):
-        if self.other_bool.get():
-            self.text_box.configure(state = 'readonly')
-            self.problem_combobox.configure(state = 'disabled')
-        else:
-            self.text_box.configure(state = 'disabled')
-            self.problem_combobox.configure(state = 'readonly')
-
     def approval_management_page(self):
-        self.clear_frame
+        self.clear_frame()
         #Frames
         self.incoming_approval_frame = ctk.CTkFrame(self, width = 900, height = 300, borderwidth = 10, relief = ctk.CTkGROOVE)
         self.incoming_approval_frame.pack(expand = True, fill = 'both')
@@ -214,7 +207,7 @@ class ContentFrame(ctk.CTkFrame):
             incoming_approvals.append(approval)
 
     def approval_request_page(self):
-        self.clear_frame
+        self.clear_frame()
         #Variables
         self.facilities = ('Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
         self.facility = ctk.StringVar()
@@ -277,7 +270,7 @@ class ContentFrame(ctk.CTkFrame):
 class SideBar(ctk.CTkFrame):
     def __init__(self, parent, login, page):
         super().__init__(parent, width = 200, height = 600, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
-        profile_icon = ctk.CTkImage(light_image = Image.open("Images\profile.png"), size = (70,70))
+        profile_icon = ctk.CTkImage(light_image = Image.open("Images/profile.png"), size = (70,70))
         if login.user.user_id[0] == 'S':
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.15)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Booking History & \nSupport', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.booking_history_support).place(anchor = 'center', relx = 0.5, rely = 0.35)
@@ -301,8 +294,8 @@ class LoginPage(ctk.CTkFrame):
         self.password = ctk.StringVar()
         self.user = user
         self.card = card
-        password_icon = ctk.CTkImage(light_image = Image.open("Images\padlock.png"), size = (22,22))
-        id_icon = ctk.CTkImage(light_image = Image.open("Images\id.png"), size = (22,22))
+        password_icon = ctk.CTkImage(light_image = Image.open("Images/padlock.png"), size = (22,22))
+        id_icon = ctk.CTkImage(light_image = Image.open("Images/id.png"), size = (22,22))
         
         #Frames
         login_frame = ctk.CTkFrame(window_frame, width = 500, height = 500, border_color = 'black', border_width = 2, fg_color = '#F0F0F0', corner_radius = 0)
