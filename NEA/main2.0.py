@@ -110,6 +110,7 @@ class ContentFrame(ctk.CTkFrame):
         self.user = user
         self.card = card
 
+#Facility Support
     def facility_support(self):
         self.clear_frame()
         #Variables
@@ -122,21 +123,73 @@ class ContentFrame(ctk.CTkFrame):
         #Widgets
         ctk.CTkLabel(self, text = 'Facility Support', font = ('Impact', 90)).place(anchor = 'center', relx = 0.5, rely = 0.15)
         ctk.CTkLabel(self, text = 'Choose Facility', font = ('Impact', 40)).place(anchor = 'center', relx = 0.3, rely = 0.35)
-        ctk.CTkComboBox(self, border_color = 'black', button_color = 'black', variable = self.facility, values = self.facilities, width = 250, dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.7, rely = 0.36)
+        ctk.CTkComboBox(self, state = 'readonly', border_color = 'black', button_color = 'black', variable = self.facility, values = self.facilities, width = 250, dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.7, rely = 0.36)
         ctk.CTkLabel(self, text = 'Choose Problem', font = ('Impact', 37)).place(anchor = 'center', relx = 0.3, rely = 0.5)
-        self.problem_combobox = ctk.CTkComboBox(self, border_color = 'black', button_color = 'black', variable = self.problem, values = self.problems, width = 250, dropdown_font = ('Impact', 15))
+        self.problem_combobox = ctk.CTkComboBox(self, state = 'readonly', border_color = 'black', button_color = 'black', variable = self.problem, values = self.problems, width = 250, dropdown_font = ('Impact', 15))
         self.problem_combobox.place(anchor = 'center', relx = 0.7, rely = 0.51)
         self.other_button = ctk.CTkSwitch(self, text = 'Other', command = self.other, variable = self.other_bool, progress_color = '#ff7e75', button_color = 'black')
         self.other_button.place(anchor = 'center', relx = 0.5, rely = 0.6)
-        self.other_entry = ctk.CTkEntry(self, state = 'disabled', width = 400, height = 100)
-        self.other_entry.place(anchor = 'n', relx = 0.5, rely = 0.65)
+        self.other_texbox = ctk.CTkTextbox(self, state = 'disabled', width = 400, height = 100, border_color = 'black', border_width = 2)
+        self.other_texbox.place(anchor = 'n', relx = 0.5, rely = 0.65)
         self.submit_button = ctk.CTkButton(self,hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', text = 'Submit', font = ('Impact', 20), command = self.request_problem)
         self.submit_button.place(anchor = 'center', relx = 0.5, rely = 0.9)
 
     def other(self):
         if self.other_bool.get() == True:
-            self.other_entry.configure(state = 'normal')
+            self.other_texbox.configure(state = 'normal')
             self.problem_combobox.configure(state = 'disabled')
+        else:
+            self.other_texbox.configure(state = 'disabled')
+            self.problem_combobox.configure(state = 'readonly')
+
+    def request_problem(self):
+        if self.facility.get() != '' or self.other_texbox.get() != '':
+            problem_state = self.problem_combobox['state'].string
+            facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?;', (self.facility.get(),)).fetchall()
+            if problem_state == 'normal':
+                issue_id_db = cursor.execute('SELECT issue_id FROM Issue WHERE issue = ?;', (self.problem.get(),)).fetchall()
+                cursor.execute('INSERT INTO IssueRequest (issue_id, facility_id, resolved) VALUES (?, ?, FALSE);', (issue_id_db[0][0], facility_id_db[0][0]))
+                conn.commit()
+                
+            else:
+                cursor.execute('INSERT INTO IssueRequest (issue_id, facility_id, other_issue_reason, resolved) VALUES (0, ?, ?, FALSE);', (self.facility_id_db[0][0], self.other_texbox.get()))
+                conn.commit()
+            messagebox.showinfo('Request Successful', 'Your issue will be fixed.')
+        else:
+            messagebox.showerror("Request Failed", "All fields must be filled out.")
+
+#Approval Request
+    def approval_request_page(self):
+        self.clear_frame()
+        #Variables
+        self.facilities = ('Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
+        self.facility = ctk.StringVar()
+        self.day = ctk.StringVar()
+        self.timing = ctk.StringVar()
+        
+        #Frames
+        outgoing_approval_frame = ctk.CTkFrame(self, border_width= 2, border_color = 'black')
+        outgoing_approval_frame.pack(expand = True, fill = 'both')
+
+        #Widgets
+        ctk.CTkLabel(self, text = 'Approval Request').pack()
+        ctk.CTkLabel(self, text = 'Request a new approval').pack()
+        ctk.CTkLabel(self, text = 'Pick Facility').pack()
+        ctk.CTkComboBox(self, variable = self.facility, values = self.facilities).pack()
+        ctk.CTkLabel(self, text = 'Pick Day').pack()
+        ctk.CTkComboBox(self, variable = self.day, values = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')).pack()
+        ctk.CTkLabel(self, text = 'Pick Timing').pack()
+        self.timings_available_combobox = ctk.CTkComboBox(self, state = 'disabled', variable = self.timing, values = [])
+        self.timings_available_combobox.pack()
+        ctk.CTkButton(self, text = 'Check Available Timings', command = self.display_timings_available).pack()
+        ctk.CTkButton(self, text = 'Request', command = self.request).pack()
+        ctk.CTkButton(self, text = 'Refresh', command = self.display_outgoing_approvals).pack()
+        #ctk.CTkButton(main_frame, text = 'Refresh', command = lambda: refresh_window(outgoing_approval_frame)).pack()
+        self.display_outgoing_approvals           
+
+    def outgoing_approvals_page(self):
+        ctk.CTkButton(self, text = 'Refresh', command = self.display_outgoing_approvals).pack()
+        self.display_outgoing_approvals   
 
     def get_time(self):
         timing_format = self.timing.get()
@@ -162,25 +215,11 @@ class ContentFrame(ctk.CTkFrame):
         self.timings_available_combobox.configure(state = 'disabled')
         messagebox.showinfo('Request Successful', f'Requested from {self.start_time} to {self.end_time} on {self.day} {self.date}')
 
+
+
     def update_table(self):
         cursor.execute('UPDATE Timeslot SET status = NULL WHERE timeslot_id = ?', (self.timeslot_id_db[0][0],))
         conn.commit()
-
-    def request_problem(self):
-        if self.facility.get() != '' or self.other_entry.get() != '':
-            problem_state = self.problem_combobox['state'].string
-            facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?;', (self.facility.get(),)).fetchall()
-            if problem_state == 'normal':
-                issue_id_db = cursor.execute('SELECT issue_id FROM Issue WHERE issue = ?;', (self.problem.get(),)).fetchall()
-                cursor.execute('INSERT INTO IssueRequest (issue_id, facility_id, resolved) VALUES (?, ?, FALSE);', (issue_id_db[0][0], facility_id_db[0][0]))
-                conn.commit()
-                
-            else:
-                cursor.execute('INSERT INTO IssueRequest (issue_id, facility_id, other_issue_reason, resolved) VALUES (0, ?, ?, FALSE);', (self.facility_id_db[0][0], self.other_entry.get()))
-                conn.commit()
-            messagebox.showinfo('Request Successful', 'Your issue will be fixed.')
-        else:
-            messagebox.showerror("Request Failed", "All fields must be filled out.")
 
     def approval_management_page(self):
         self.clear_frame()
@@ -209,34 +248,6 @@ class ContentFrame(ctk.CTkFrame):
             else: status = 'Declined'
             approval = Incoming_Approval_Segment(self.incoming_approval_frame, incoming_approvals, booking, self.card)
             incoming_approvals.append(approval)
-
-    def approval_request_page(self):
-        self.clear_frame()
-        #Variables
-        self.facilities = ('Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
-        self.facility = ctk.StringVar()
-        self.day = ctk.StringVar()
-        self.timing = ctk.StringVar()
-        
-        #Frames
-        outgoing_approval_frame = ctk.CTkFrame(self, border_width= 2, border_color = 'black')
-        outgoing_approval_frame.pack(expand = True, fill = 'both')
-
-        #Widgets
-        ctk.CTkLabel(self, text = 'Approval Request').pack()
-        ctk.CTkLabel(self, text = 'Request a new approval').pack()
-        ctk.CTkLabel(self, text = 'Pick Facility').pack()
-        ctk.CTkComboBox(self, variable = self.facility, values = self.facilities).pack()
-        ctk.CTkLabel(self, text = 'Pick Day').pack()
-        ctk.CTkComboBox(self, variable = self.day, values = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')).pack()
-        ctk.CTkLabel(self, text = 'Pick Timing').pack()
-        self.timings_available_combobox = ctk.CTkComboBox(self, state = 'disabled', variable = self.timing, values = [])
-        self.timings_available_combobox.pack()
-        ctk.CTkButton(self, text = 'Check Available Timings', command = self.display_timings_available).pack()
-        ctk.CTkButton(self, text = 'Request', command = self.request).pack()
-        ctk.CTkButton(self, text = 'Refresh', command = self.display_outgoing_approvals).pack()
-        #ctk.CTkButton(main_frame, text = 'Refresh', command = lambda: refresh_window(outgoing_approval_frame)).pack()
-        self.display_outgoing_approvals
 
     def display_timings_available(self):
         timings_available = []
@@ -277,7 +288,7 @@ class SideBar(ctk.CTkFrame):
         profile_icon = ctk.CTkImage(light_image = Image.open("Images/profile.png"), size = (70,70))
         if login.user.user_id[0] == 'S':
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.15)
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Booking History & \nSupport', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.facility_support).place(anchor = 'center', relx = 0.5, rely = 0.35)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Facility Support', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.facility_support).place(anchor = 'center', relx = 0.5, rely = 0.35)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approval Request & \nOutgoing Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approval_request_page).place(anchor = 'center', relx = 0.5, rely = 0.5)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'My Analytics', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.63)
         else:
