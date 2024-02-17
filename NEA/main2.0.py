@@ -110,29 +110,33 @@ class ContentFrame(ctk.CTkFrame):
         self.user = user
         self.card = card
 
-    def booking_history_support(self):
+    def facility_support(self):
         self.clear_frame()
         #Variables
         self.problem = ctk.StringVar()
         self.facility = ctk.StringVar()
         self.other_bool = ctk.BooleanVar()
-        self.problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard', 'Other']
+        self.problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard']
         self.facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
 
         #Widgets
         ctk.CTkLabel(self, text = 'Facility Support', font = ('Impact', 90)).place(anchor = 'center', relx = 0.5, rely = 0.15)
         ctk.CTkLabel(self, text = 'Choose Facility', font = ('Impact', 40)).place(anchor = 'center', relx = 0.3, rely = 0.35)
-        ctk.CTkComboBox(self, variable = self.facility, values = self.facilities, width = 250).place(anchor = 'center', relx = 0.7, rely = 0.36)
-        ctk.CTkLabel(self, text = 'Choose Problem', font = ('Impact', 40)).place(anchor = 'center', relx = 0.3, rely = 0.5)
-        ctk.CTkComboBox(self, variable = self.problem, values = self.problems, width = 250, command = self.choose_or_other).place(anchor = 'center', relx = 0.7, rely = 0.51)
-        self.other_entry = ctk.CTkEntry(self, state = 'disabled')
-        self.submit_button = ctk.CTkButton(self, text = 'Submit', command = self.request_problem)
-        self.submit_button.place(anchor = 'center', relx = 0.5, rely = 0.55)
+        ctk.CTkComboBox(self, border_color = 'black', button_color = 'black', variable = self.facility, values = self.facilities, width = 250, dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.7, rely = 0.36)
+        ctk.CTkLabel(self, text = 'Choose Problem', font = ('Impact', 37)).place(anchor = 'center', relx = 0.3, rely = 0.5)
+        self.problem_combobox = ctk.CTkComboBox(self, border_color = 'black', button_color = 'black', variable = self.problem, values = self.problems, width = 250, dropdown_font = ('Impact', 15))
+        self.problem_combobox.place(anchor = 'center', relx = 0.7, rely = 0.51)
+        self.other_button = ctk.CTkSwitch(self, text = 'Other', command = self.other, variable = self.other_bool, progress_color = '#ff7e75', button_color = 'black')
+        self.other_button.place(anchor = 'center', relx = 0.5, rely = 0.6)
+        self.other_entry = ctk.CTkEntry(self, state = 'disabled', width = 400, height = 100)
+        self.other_entry.place(anchor = 'n', relx = 0.5, rely = 0.65)
+        self.submit_button = ctk.CTkButton(self,hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', text = 'Submit', font = ('Impact', 20), command = self.request_problem)
+        self.submit_button.place(anchor = 'center', relx = 0.5, rely = 0.9)
 
-    def choose_or_other(self):
-        if self.problem.get() == 'Other':
-            self.other_entry.place(anchor = 'center', relx = 0.5, rely = 0.8)
-            self.submit_button.place(anchor = 'center', relx = 0.5, rely = 0.9)
+    def other(self):
+        if self.other_bool.get() == True:
+            self.other_entry.configure(state = 'normal')
+            self.problem_combobox.configure(state = 'disabled')
 
     def get_time(self):
         timing_format = self.timing.get()
@@ -273,12 +277,12 @@ class SideBar(ctk.CTkFrame):
         profile_icon = ctk.CTkImage(light_image = Image.open("Images/profile.png"), size = (70,70))
         if login.user.user_id[0] == 'S':
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.15)
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Booking History & \nSupport', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.booking_history_support).place(anchor = 'center', relx = 0.5, rely = 0.35)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Booking History & \nSupport', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.facility_support).place(anchor = 'center', relx = 0.5, rely = 0.35)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approval Request & \nOutgoing Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approval_request_page).place(anchor = 'center', relx = 0.5, rely = 0.5)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'My Analytics', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.63)
         else:
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.15)
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Response History', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.booking_history_support).place(anchor = 'center', relx = 0.5, rely = 0.35)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Response History', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.facility_support).place(anchor = 'center', relx = 0.5, rely = 0.35)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approval Management', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approval_management_page).place(anchor = 'center', relx = 0.5, rely = 0.5)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'School Analytics', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.63)
         ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Logout', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = login.logout_func).place(anchor = 'center', relx = 0.5, rely = 0.93)
