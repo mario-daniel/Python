@@ -27,7 +27,7 @@ cursor.execute('''
     CREATE TABLE IF NOT EXISTS Card (
         card_id INTEGER PRIMARY KEY AUTOINCREMENT,
         tag_id VARCHAR(12),
-        owner CHAR(1)
+        owner VARCHAR(1)
     );
 ''')
 
@@ -56,10 +56,7 @@ cursor.execute('''
         facility_id INTEGER,
         start_time TIME,
         end_time TIME,
-        status BOOLEAN,
-        card_id INTEGER,
-        FOREIGN KEY (facility_id) REFERENCES Facility(facility_id),
-        FOREIGN KEY (card_id) REFERENCES Card(card_id)
+        FOREIGN KEY (facility_id) REFERENCES Facility(facility_id)
     );
 ''')
 
@@ -75,6 +72,20 @@ cursor.execute('''
         FOREIGN KEY (facility_id) REFERENCES Facility(facility_id),
         FOREIGN KEY (user_id) REFERENCES User(user_id),
         FOREIGN KEY (timeslot_id) REFERENCES User(timeslot_id)
+    );
+''')
+
+#Teacher Account Approval Table
+cursor.execute('''
+    CREATE TABLE IF NOT EXISTS TeacherApproval (
+        user_id VARCHAR(10),
+        facility_id INTEGER,
+        first_name VARCHAR(20),
+        last_name VARCHAR(20),
+        hashed_password VARCHAR(100),
+        salt VARCHAR(100),
+        PRIMARY KEY (user_id),
+        FOREIGN KEY (facility_id) REFERENCES Facility(facility_id)
     );
 ''')
 
@@ -97,7 +108,6 @@ cursor.execute('''
     CREATE TABLE IF NOT EXISTS Issue (
         issue_id INTEGER,
         issue VARCHAR(30),
-        other_issue BOOLEAN,
         PRIMARY KEY (issue_id)
     );
 ''')
@@ -108,7 +118,7 @@ cursor.execute('''
         issue_number INTEGER PRIMARY KEY AUTOINCREMENT,
         issue_id VARCHAR(30),
         facility_id BOOLEAN,
-        other_issue_reason VARCHAR(200),
+        extended_reason VARCHAR(200),
         resolved BOOLEAN,
         FOREIGN KEY (issue_id) REFERENCES Issue(issue_id),
         FOREIGN KEY (facility_id) REFERENCES Facility(facility_id)
@@ -118,15 +128,14 @@ cursor.execute('''
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (1, 'Football', 1))
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (2, 'Sixth Form Room', 0))
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (3, 'Basketball', 1))
-cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (4, 'Cricket', 1))
+cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (4, 'Crickt', 1))
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (5, 'Multi-Purpose Hall', 1))
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (6, 'Fitness Suite', 1))
 
-cursor.execute('INSERT INTO Issue VALUES (?, ?, ?)', (1, 'Other', 1))
-cursor.execute('INSERT INTO Issue VALUES (?, ?, ?)', (2, 'Facility Damage', 0))
-cursor.execute('INSERT INTO Issue VALUES (?, ?, ?)', (3, 'Facility Resources Empty', 0))
-cursor.execute('INSERT INTO Issue VALUES (?, ?, ?)', (4, 'Theft of Facility Equipment', 0))
-cursor.execute('INSERT INTO Issue VALUES (?, ?, ?)', (5, 'Health Hazard', 0))
+cursor.execute('INSERT INTO Issue VALUES (?, ?)', (1, 'Facility Damage'))
+cursor.execute('INSERT INTO Issue VALUES (?, ?)', (2, 'Facility Resources Empty'))
+cursor.execute('INSERT INTO Issue VALUES (?, ?)', (3, 'Theft of Facility Equipment'))
+cursor.execute('INSERT INTO Issue VALUES (?, ?)', (4, 'Health Hazard'))
 
 
 days = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday']
@@ -140,17 +149,27 @@ for day in days:
     if day != 'Friday':
         for facility in facility_ids:
             for index in range(len(start_timings)):
-                cursor.execute('INSERT INTO Timeslot (day, facility_id, start_time, end_time, status, card_id) VALUES (?, ?, ?, ?, ?, ?)', (day, facility, start_timings[index], end_timings[index], 0, None))
+                cursor.execute('INSERT INTO Timeslot (day, facility_id, start_time, end_time) VALUES (?, ?, ?, ?)', (day, facility, start_timings[index], end_timings[index]))
     else:
         for facility in facility_ids:
             for index in range(len(friday_start_timings)):
-                cursor.execute('INSERT INTO Timeslot (day, facility_id, start_time, end_time, status, card_id) VALUES (?, ?, ?, ?, ?, ?)', (day, facility, friday_start_timings[index], friday_end_timings[index], 0, None))
+                cursor.execute('INSERT INTO Timeslot (day, facility_id, start_time, end_time) VALUES (?, ?, ?, ?)', (day, facility, friday_start_timings[index], friday_end_timings[index]))
+
+import secrets, hashlib
+
+salt = secrets.token_bytes(16)
+salted_password = 'Admin@2024'.encode('utf-8') + salt
+hashed_password = hashlib.sha256(salted_password).hexdigest()
+
+cursor.execute('INSERT INTO USER (user_id, card_id, first_name, last_name, hashed_password, salt) VALUES ("A", 1, "Admin", "", ?, ?)', (hashed_password, salt))
 
 import random
 import string
 for i in range(0, 5):
     letters = f'{string.ascii_uppercase}0123456789'
     cursor.execute('INSERT INTO Card (tag_id) VALUES (?)', (f'{random.choice(letters)}{random.choice(letters)} {random.choice(letters)}{random.choice(letters)} {random.choice(letters)}{random.choice(letters)} {random.choice(letters)}{random.choice(letters)}',))
+
+cursor.execute('UPDATE Card SET owner = "A" WHERE card_id = 1;')
 
 conn.commit()
 conn.close()
