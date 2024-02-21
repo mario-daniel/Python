@@ -1,7 +1,7 @@
-import customtkinter as ctk
 from tkinter import messagebox
 from PIL import Image
-import sqlite3
+from datetime import datetime, timedelta
+import smtplib, hashlib, secrets, re, sqlite3, customtkinter as ctk      
 
 conn = sqlite3.connect('rfid')
 cursor = conn.cursor()
@@ -14,29 +14,20 @@ window_frame = ctk.CTkFrame(window, fg_color = '#ff7e75', corner_radius = 0, bor
 window_frame.pack(expand = True, fill = 'both')
 ctk.set_appearance_mode('light')
 
-class Student: 
-    def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = '', grade = ''):
+class User: 
+    def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = '', grade = '', facility = 0):
         self.first_name = first_name
         self.last_name = last_name
         self.user_id = user_id
         self.hashed_password = hashed_password
         self.salt = salt
         self.grade = grade
-
-class Teacher:
-    def __init__(self, first_name = '', last_name = '', user_id = '', hashed_password = '', salt = '', facility = 0):
-        self.first_name = first_name
-        self.last_name = last_name
-        self.user_id = user_id
-        self.hashed_password = hashed_password
-        self.salt = salt
         self.facility = facility
 
 class Card:
-    def __init__(self, card_id = 0, tag_id = '', owner = ''):
+    def __init__(self, card_id = 0, tag_id = ''):
         self.card_id = card_id
         self.tag_id = tag_id
-        self.owner = owner
 
 class Outgoing_Approval_Segment(ctk.CTkFrame):
     def __init__(self, parent, booking, status, outgoing_approvals):
@@ -91,23 +82,59 @@ class Incoming_Approval_Segment(ctk.CTkFrame):
         cursor.execute('UPDATE Timeslot SET status = TRUE, card_id = ? WHERE timeslot_id = ?', (card_id_db[0][0], self.booking[7]))
         cursor.execute('UPDATE Booking SET approved = TRUE WHERE booking_number = ?', (self.booking[0],))
         conn.commit()
-        for approval in self.incoming_approvals: 
-            if approval.booking[0] == self.booking[0]:
-                for widget in approval.winfo_children():
-                    widget.destroy()
-                self.incoming_approvals.remove(approval)
-                del approval
+        self.delete_approval_object
 
     def decline_booking(self):
         cursor.execute('UPDATE Timeslot SET status = FALSE WHERE timeslot_id = ?', (self.card.card_id,))
         cursor.execute('UPDATE Booking SET approved = FALSE WHERE booking_number = ?', (self.booking[0]))
         conn.commit()
+        self.delete_approval_object()
+
+    def delete_approval_object(self):
         for approval in self.incoming_approvals: 
             if approval.booking[0] == self.booking[0]:
                 for widget in approval.winfo_children():
                     widget.destroy()
                 self.incoming_approvals.remove(approval)
-                del approval
+                del approval  
+
+class Incoming_Teacher_Approval_Segment(ctk.CTkFrame):
+    def __init__(self, parent, incoming_approvals, approval):
+        super().__init__(master = parent)
+        self.incoming_approvals = incoming_approvals
+        self.approval = approval
+        self.rowconfigure(0, weight = 1)
+        self.columnconfigure((0, 1, 2, 3), weight = 1)
+        close_button = ctk.CTkImage(light_image = Image.open("Images/close.png"), size = (22,22))
+        check_button = ctk.CTkImage(light_image = Image.open("Images/check.png"), size = (22,22))
+        ctk.CTkButton(self, text = self.approval[0], width = 50, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 0)
+        ctk.CTkButton(self, text = self.approval[1], width = 50, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 1)
+        ctk.CTkButton(self, text = self.approval[2], width = 50, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 2)
+        ctk.CTkButton(self, text = self.approval[3], width = 50, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 3)
+        ctk.CTkButton(self, text = '', image = check_button, width = 10, hover_color = '#d4d4d4', fg_color = '#F0F0F0', command = self.accept_booking).grid(row = 0, column = 8)
+        ctk.CTkButton(self, text = '', image = close_button, width = 10, hover_color = '#d4d4d4', fg_color = '#F0F0F0', command = self.decline_booking).grid(row = 0, column = 9)
+
+    def accept_approval(self):
+        card = cursor.execute('SELECT card_id FROM Card WHERE owner IS NULL LIMIT 1;').fetchall()
+        cursor.execute('UPDATE Card SET owner = "T" WHERE card_id = ?;', (card[0][0],))
+        cursor.execute('INSERT INTO User (user_id, card_id, facility_id, first_name, last_name, hashed_password, salt) VALUES (?, ?, ?, ?, ?, ?, ?)', (self.approval[0], card[0][0], self.approval[7], self.approval[1], self.approval[2], self.approval[4], self.approval[5]))
+        conn.commit()
+        body = f"We would like to inform you that you've been successfully accepted as a teacher.\n Please Login with the same details used during your registration."
+        email('Approval Request', body)
+        self.delete_approval_object()
+
+    def decline_approval(self):
+        body = f"We would like to inform you that you've been unfortunately not accepted as a teacher."
+        email('Approval Request', body)
+        self.delete_approval_object()
+
+    def delete_approval_object(self):
+        for approval in self.incoming_approvals: 
+            if approval.booking[0] == self.booking[0]:
+                for widget in approval.winfo_children():
+                    widget.destroy()
+                self.incoming_approvals.remove(approval)
+                del approval  
 
 class ContentFrame(ctk.CTkFrame):
     def __init__(self, parent, user, card):
@@ -204,7 +231,6 @@ class ContentFrame(ctk.CTkFrame):
             if timing_format[index] == '-':
                 self.start_time = f'{timing_format[:index - 1].strip()}:00'
                 self.end_time = f'{timing_format[index + 1:].strip()}:00'
-        from datetime import datetime, timedelta
         day = self.day.get()
         today = datetime.today()
         Day_num = {'Monday' : 0, 'Tuesday' : 1, 'Wednesday' : 2, 'Thursday' : 3, 'Friday' : 4}
@@ -279,6 +305,26 @@ class ContentFrame(ctk.CTkFrame):
         else:
             ctk.CTkLabel(self, text = 'You have no requests sent', font = ('Impact', 50)).place(anchor = 'center', relx = 0.5, rely = 0.5)
 
+#Teacher Registration Approval Page
+    def teacher_approval(self):
+        self.clear_frame()
+        approvals = cursor.execute('''SELECT user_id, first_name, last_name, facility_name, hashed_password, salt, facility_id FROM TeacherApproval, Facility WHERE TeacherApproval.facility_id = Facility.facility_id;''').fetchall()
+        if approvals != []:
+            incoming_approvals = []
+            for approval in approvals:
+                approval = Incoming_Teacher_Approval_Segment(self, incoming_approvals, approval)
+                incoming_approvals.append(approval)
+            title_font = ctk.CTkFont(family = 'Impact', size = 18, underline = True)
+            ctk.CTkLabel(self, text = 'Teacher Account Approvals', font = ('Impact', 70)).place(anchor = 'center', relx = 0.5, rely = 0.15)
+            ctk.CTkLabel(self, text = 'Code', font = title_font).place(anchor = 'center', relx = 0.085, rely = 0.33)
+            ctk.CTkLabel(self, text = 'First Name', font = title_font).place(anchor = 'center', relx = 0.24, rely = 0.33)
+            ctk.CTkLabel(self, text = 'Last Name', font = title_font).place(anchor = 'center', relx = 0.39, rely = 0.33)
+            ctk.CTkLabel(self, text = 'Facility', font = title_font).place(anchor = 'center', relx = 0.545, rely = 0.33)
+            for request in range(len(incoming_approvals)):
+                    incoming_approvals[request].place(anchor = 'center', relx = 0.5, rely = (request / 10) + 0.4)
+        else:
+            ctk.CTkLabel(self, text = 'There are no incoming requests.', font = ('Impact', 50)).place(anchor = 'center', relx = 0.5, rely = 0.5)
+
 #Reset Content Frame
     def clear_frame(self):
         for widget in self.winfo_children():
@@ -288,16 +334,25 @@ class SideBar(ctk.CTkFrame):
     def __init__(self, parent, login, page):
         super().__init__(parent, width = 200, height = 600, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
         profile_icon = ctk.CTkImage(light_image = Image.open("Images/profile.png"), size = (70,70))
-        if login.user.user_id[0] == 'S':
+        if login.user.user_id[0] == 'A':
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.15)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.35)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Teacher Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.4)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Bookings', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.55)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Analytics', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.63)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Response History', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.75)
+        elif login.user.user_id[0] == 'T':
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.15)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.incoming_approvals).place(anchor = 'center', relx = 0.5, rely = 0.35)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Bookings', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approval_request).place(anchor = 'center', relx = 0.5, rely = 0.55)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Analytics', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.63)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Response History', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.facility_support).place(anchor = 'center', relx = 0.5, rely = 0.75)
+        elif login.user.user_id[0] == 'S':
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.15)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Facility Support', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.facility_support).place(anchor = 'center', relx = 0.5, rely = 0.35)
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approval Request', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approval_request).place(anchor = 'center', relx = 0.5, rely = 0.5)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approval Request', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approval_request).place(anchor = 'center', relx = 0.5, rely = 0.55)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'View Sent Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.outgoing_approvals).place(anchor = 'center', relx = 0.5, rely = 0.63)
-        else:
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.15)
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Response History', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.facility_support).place(anchor = 'center', relx = 0.5, rely = 0.35)
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'View Coming Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.incoming_approvals).place(anchor = 'center', relx = 0.5, rely = 0.5)
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'School Analytics', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.63)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approval Request History', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.75)
         ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Logout', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = login.logout_func).place(anchor = 'center', relx = 0.5, rely = 0.93)
 
 class LoginPage(ctk.CTkFrame):
@@ -332,22 +387,17 @@ class LoginPage(ctk.CTkFrame):
 
     def login_func(self):
         self.user_db = cursor.execute('SELECT * FROM User WHERE user_id = ?', (self.Id.get(),)).fetchall()
+        tag_id_db = cursor.execute('SELECT Card.card_id, Card.tag_id FROM Card, User WHERE User.user_id = ? AND User.card_id = Card.card_id;', (self.user_db[0][0],)).fetchall()
         if self.user_db == []:
             messagebox.showerror("Login Failed", "User does not exist")
         elif self.password_check():
-            tag_id_db = cursor.execute('SELECT Card.tag_id, Card.owner FROM Card, User WHERE User.user_id = ? AND User.card_id = Card.card_id;', (self.user_db[0][0],)).fetchall()
             messagebox.showinfo('Login Successful', f'Welcome, {self.user_db[0][3]} {self.user_db[0][4]}')
-            if self.user_db[0][0][0] == 'S':
-                self.card, self.user = Card(self.user_db[0][1], tag_id_db[0][0], tag_id_db[0][1]), Student(self.user_db[0][3], self.user_db[0][4], self.user_db[0][0], self.user_db[0][5], self.user_db[0][6], self.user_db[0][7])
-                main(self)
-            else:
-                self.card, self.user = Card(self.user_db[0][1], tag_id_db[0][0], tag_id_db[0][1]), Teacher(self.user_db[0][3], self.user_db[0][4], self.user_db[0][0], self.user_db[0][5], self.user_db[0][6], self.user_db[0][2])
-                main(self)
+            self.card, self.user = Card(self.user_db[0][1], tag_id_db[0][0]), User(self.user_db[0][3], self.user_db[0][4], self.user_db[0][0], self.user_db[0][5], self.user_db[0][6], self.user_db[0][7], self.user_db[0][2])
+            main(self)
         else:
             messagebox.showerror("Login Failed", "Incorrect username or password")
 
     def password_check(self):
-        import hashlib
         salted_password = self.password.get().encode('utf-8') + self.user_db[0][6]
         hashed_password = hashlib.sha256(salted_password).hexdigest()
         if hashed_password == self.user_db[0][5]: return True
@@ -416,36 +466,33 @@ class RegisterPage(ctk.CTkFrame):
         if self.register_func(): LoginPage(window_frame)
 
     def register_func(self):
-        import re
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
         Id_db = cursor.execute('SELECT user_id FROM User WHERE user_id = ?', (self.user_id.get(),)).fetchall()
+        Teacher_Id_db = cursor.execute('SELECT user_id FROM TeacherApproval WHERE user_id = ?', (self.user_id.get(),)).fetchall()
         if self.user_id.get() == '' or self.password.get() == '' or self.first_name.get() == '' or self.last_name.get() == '' or self.class_facility.get() == '':
             messagebox.showerror("Register Failed", "All fields must be filled out.")
-        elif Id_db != []:
-            if Id_db[0][0] == self.user_id.get():
+        elif Id_db != [] or Teacher_Id_db != []:
+            if Id_db[0][0] == self.user_id.get() or Teacher_Id_db[0][0] == self.user_id.get():
                 messagebox.showerror("Register Failed", "User already exists.")
         elif not re.match(pattern, self.password.get()):
             messagebox.showerror("Register Failed", "Password is not strong enough. Please include: 8 Characters minimum, A capital letter, A small letter, A number, A symbol.")
         elif re.match(pattern, self.password.get()):
             hashed_password, salt = self.password_hash()
             facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?', (self.class_facility.get(), )).fetchall()
-            if facility_id_db == []: facility_id_db = [(0,)]
             card = cursor.execute('SELECT card_id FROM Card WHERE owner IS NULL LIMIT 1;').fetchall()
             if not self.class_facility_bool.get():
-                cursor.execute('UPDATE Card SET owner = "T" WHERE card_id = ?;', (card[0][0],))
-                class_grade = ''
-                user_id = f'T{self.user_id.get()}'
+                cursor.execute('INSERT INTO TeacherApproval (user_id, facility_id, first_name, last_name, hashed_password, salt) VALUES (?, ?, ?, ?, ?, ?)', (self.user_id.get(), facility_id_db[0][0], self.first_name.get(), self.last_name.get(), hashed_password, salt))
+                messagebox.showinfo('Request Sent', f'You will be notified by email on our decision.')
             else:
                 cursor.execute('UPDATE Card SET owner = "S" WHERE card_id = ?;', (card[0][0],))
                 class_grade = self.class_facility.get()
                 user_id = f'S{self.user_id.get()}'
-            cursor.execute('INSERT INTO User (user_id, card_id, facility_id, first_name, last_name, hashed_password, salt, class_grade) VALUES (?, ?, ?, ?, ?, ?, ?, ?)', (user_id, card[0][0], facility_id_db[0][0], self.first_name.get(), self.last_name.get(), hashed_password, salt, class_grade))
+                cursor.execute('INSERT INTO User (user_id, card_id, first_name, last_name, hashed_password, salt, class_grade) VALUES (?, ?, ?, ?, ?, ?, ?)', (user_id, card[0][0], self.first_name.get(), self.last_name.get(), hashed_password, salt, class_grade))
+                messagebox.showinfo('Registration Successful', f'Please Login with {user_id}')
             conn.commit()
-            messagebox.showinfo('Registration Successful', f'Please Login with {user_id}')
             return True
     
     def password_hash(self):
-        import hashlib, secrets
         salt = secrets.token_bytes(16)
         salted_password = self.password.get().encode('utf-8') + salt
         hashed_password = hashlib.sha256(salted_password).hexdigest()
@@ -455,6 +502,12 @@ def remove_widgets_login_register():
     #Removes every widget on the page by cyclying through them and destroying them
     for widget in window_frame.winfo_children():
         widget.destroy()
+
+def email(subject, body):
+    with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
+        smtp.starttls()
+        smtp.login('3465@ascsdubai.ae', 'Mario@School24')
+        smtp.sendmail('3465@ascsdubai.ae', 'skatedany26@gmail.com', f'Subject: {subject}\n\n{body}')
 
 def main(login = None):
     if login != None:
