@@ -8,6 +8,7 @@ cursor.execute("DROP TABLE IF EXISTS User;")
 cursor.execute("DROP TABLE IF EXISTS Booking;")
 cursor.execute("DROP TABLE IF EXISTS Timeslot;")
 cursor.execute("DROP TABLE IF EXISTS Card;")
+cursor.execute("DROP TABLE IF EXISTS TeacherApproval;")
 cursor.execute("DROP TABLE IF EXISTS Swipe;")
 cursor.execute("DROP TABLE IF EXISTS Issue;")
 cursor.execute("DROP TABLE IF EXISTS IssueRequest;")
@@ -27,7 +28,8 @@ cursor.execute('''
     CREATE TABLE IF NOT EXISTS Card (
         card_id INTEGER PRIMARY KEY AUTOINCREMENT,
         tag_id VARCHAR(12),
-        owner VARCHAR(1)
+        user_id VARCHAR(1), 
+        FOREIGN KEY (user_id) REFERENCES User(user_id)
     );
 ''')
 
@@ -35,15 +37,14 @@ cursor.execute('''
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS User (
         user_id VARCHAR(10),
-        card_id INTEGER,
         facility_id INTEGER,
         first_name VARCHAR(20),
         last_name VARCHAR(20),
         hashed_password VARCHAR(100),
         salt VARCHAR(100),
         class_grade VARCHAR(3),
+        login_count INTEGER,
         PRIMARY KEY (user_id),
-        FOREIGN KEY (card_id) REFERENCES Card(card_id),
         FOREIGN KEY (facility_id) REFERENCES Facility(facility_id)
     );
 ''')
@@ -56,6 +57,7 @@ cursor.execute('''
         facility_id INTEGER,
         start_time TIME,
         end_time TIME,
+        status BOOLEAN,
         FOREIGN KEY (facility_id) REFERENCES Facility(facility_id)
     );
 ''')
@@ -75,27 +77,14 @@ cursor.execute('''
     );
 ''')
 
-#Teacher Account Approval Table
-cursor.execute('''
-    CREATE TABLE IF NOT EXISTS TeacherApproval (
-        user_id VARCHAR(10),
-        facility_id INTEGER,
-        first_name VARCHAR(20),
-        last_name VARCHAR(20),
-        hashed_password VARCHAR(100),
-        salt VARCHAR(100),
-        PRIMARY KEY (user_id),
-        FOREIGN KEY (facility_id) REFERENCES Facility(facility_id)
-    );
-''')
-
 #Swipe Table
 cursor.execute('''
     CREATE TABLE IF NOT EXISTS Swipe (
         swipe_number INTEGER,
         card_id INTEGER,
         facility_id INTEGER,
-        date_time DATETIME,
+        date DATE,
+        time TIME,
         access_accepted BOOLEAN,
         PRIMARY KEY (swipe_number)
         FOREIGN KEY (card_id) REFERENCES Card(card_id)
@@ -128,7 +117,7 @@ cursor.execute('''
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (1, 'Football', 1))
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (2, 'Sixth Form Room', 0))
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (3, 'Basketball', 1))
-cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (4, 'Crickt', 1))
+cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (4, 'Cricket', 1))
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (5, 'Multi-Purpose Hall', 1))
 cursor.execute('INSERT INTO Facility VALUES (?, ?, ?)', (6, 'Fitness Suite', 1))
 
@@ -149,11 +138,11 @@ for day in days:
     if day != 'Friday':
         for facility in facility_ids:
             for index in range(len(start_timings)):
-                cursor.execute('INSERT INTO Timeslot (day, facility_id, start_time, end_time) VALUES (?, ?, ?, ?)', (day, facility, start_timings[index], end_timings[index]))
+                cursor.execute('INSERT INTO Timeslot (day, facility_id, start_time, end_time, status) VALUES (?, ?, ?, ?, ?)', (day, facility, start_timings[index], end_timings[index], 0))
     else:
         for facility in facility_ids:
             for index in range(len(friday_start_timings)):
-                cursor.execute('INSERT INTO Timeslot (day, facility_id, start_time, end_time) VALUES (?, ?, ?, ?)', (day, facility, friday_start_timings[index], friday_end_timings[index]))
+                cursor.execute('INSERT INTO Timeslot (day, facility_id, start_time, end_time, status) VALUES (?, ?, ?, ?, ?)', (day, facility, friday_start_timings[index], friday_end_timings[index], 0))
 
 import secrets, hashlib
 
@@ -161,7 +150,13 @@ salt = secrets.token_bytes(16)
 salted_password = 'Admin@2024'.encode('utf-8') + salt
 hashed_password = hashlib.sha256(salted_password).hexdigest()
 
-cursor.execute('INSERT INTO USER (user_id, card_id, first_name, last_name, hashed_password, salt) VALUES ("A", 1, "Admin", "", ?, ?)', (hashed_password, salt))
+cursor.execute('''INSERT INTO USER (user_id, first_name, last_name, hashed_password, salt, login_count) 
+               VALUES ("A", "Admin", '', ?, ?, 10000);''', 
+               (hashed_password, salt))
+cursor.execute('''INSERT INTO USER (user_id, facility_id, first_name, last_name, login_count) 
+               VALUES ("T3465", 1, "Mario", 'Daniel', 0);''')
+cursor.execute('''INSERT INTO USER (user_id, first_name, last_name, class_grade, login_count) 
+               VALUES ("S3465", "Mario", 'Daniel', '13B', 0);''')
 
 import random
 import string
@@ -169,7 +164,7 @@ for i in range(0, 5):
     letters = f'{string.ascii_uppercase}0123456789'
     cursor.execute('INSERT INTO Card (tag_id) VALUES (?)', (f'{random.choice(letters)}{random.choice(letters)} {random.choice(letters)}{random.choice(letters)} {random.choice(letters)}{random.choice(letters)} {random.choice(letters)}{random.choice(letters)}',))
 
-cursor.execute('UPDATE Card SET owner = "A" WHERE card_id = 1;')
+cursor.execute('UPDATE Card SET user_id = "A" WHERE card_id = 1;')
 
 conn.commit()
 conn.close()
