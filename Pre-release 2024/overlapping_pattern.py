@@ -154,8 +154,8 @@ class Puzzle():
                                     self.__GetCell(StartRow - 1, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
                                     self.__GetCell(StartRow - 1, StartColumn + 1).AddToNotAllowedSymbols(CurrentSymbol)
                                     return 10
-                            else:
-                                print('Overlapping Pattern')
+                                else:
+                                    print('Overlapping Pattern')
                 except:
                     pass
         return 0
