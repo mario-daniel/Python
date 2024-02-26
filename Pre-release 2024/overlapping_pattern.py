@@ -141,8 +141,9 @@ class Puzzle():
                         CurrentSymbol = self.__GetCell(Row, Column).GetSymbol()
                         if P.MatchesPattern(PatternString, CurrentSymbol):
                             PatternString = ''.join(['*' if char != CurrentSymbol else char for char in PatternString])
-                            for index in range(len(self.__AllowedPatterns)):
-                                if self.__AllowedPatterns[index].__PatternSequence == PatternString:
+                            allowed_patterns = ['QQ**Q**QQ', 'X*X*X*X*X', 'TTT**T**T']
+                            for pattern in allowed_patterns:      
+                                if pattern == PatternString:
                                     self.__GetCell(StartRow, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
                                     self.__GetCell(StartRow, StartColumn + 1).AddToNotAllowedSymbols(CurrentSymbol)
                                     self.__GetCell(StartRow, StartColumn + 2).AddToNotAllowedSymbols(CurrentSymbol)
