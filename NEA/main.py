@@ -14,7 +14,7 @@ window_frame = ctk.CTkFrame(window, fg_color = '#ff7e75', corner_radius = 0, bor
 window_frame.pack(expand = True, fill = 'both')
 ctk.set_appearance_mode('light')
 
-class User: 
+class User:
     def __init__(self, user_id, first_name, last_name, hashed_password, salt, grade, facility_id, login_count):
         self.user_id = user_id
         self.first_name = first_name
@@ -31,10 +31,10 @@ class Card:
         self.tag_id = tag_id
 
 class Outgoing_Approval_Segment(ctk.CTkFrame):
-    def __init__(self, parent, booking, status, outgoing_approvals):
+    def __init__(self, parent, booking, status, outgoing_approval_objects):
         super().__init__(master = parent, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
         self.booking = booking
-        self.outgoing_approvals = outgoing_approvals
+        self.outgoing_approval_objects = outgoing_approval_objects
         self.rowconfigure(0, weight = 1)
         self.columnconfigure((0, 1, 2, 3, 4, 5, 6), weight = 1)
         if status == 'Approved':
@@ -53,24 +53,26 @@ class Outgoing_Approval_Segment(ctk.CTkFrame):
             ctk.CTkButton(self, text = self.booking[5], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 4)
             ctk.CTkButton(self, text = status, width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 5)
             ctk.CTkButton(self, text = '', image = close_button, width = 10, hover_color = '#d4d4d4', fg_color = '#F0F0F0', command = self.remove_booking,).grid(row = 0, column = 6)
-    
+        self.pack(pady = 10)
+
     def remove_booking(self):
         cursor.execute('UPDATE Timeslot SET status = FALSE WHERE timeslot_id = ?', (self.booking[7],))
         cursor.execute('DELETE FROM Booking WHERE booking_number = ?', (self.booking[0],))
         conn.commit()
-        for approval in self.outgoing_approvals: 
-            if approval.booking[0] == self.booking[0]:
-                for widget in approval.winfo_children():
+        for approval_object in self.outgoing_approval_objects: 
+            if approval_object.booking[0] == self.booking[0]:
+                for widget in approval_object.winfo_children():
                     widget.destroy()
-                self.outgoing_approvals.remove(approval)
-                del approval
+                self.outgoing_approval_objects.remove(approval_object)
+                del approval_object
 
 class Incoming_Approval_Segment(ctk.CTkFrame):
-    def __init__(self, parent, incoming_approvals, booking, card):
+    def __init__(self, parent, incoming_approval_objects, booking, card):
         super().__init__(master = parent)
         self.card = card
-        self.incoming_approvals = incoming_approvals
+        self.incoming_approval_objects = incoming_approval_objects
         self.booking = booking
+        self.toplevel_window = None
         self.rowconfigure(0, weight = 1)
         self.columnconfigure((0, 1, 2, 3, 4, 5), weight = 1)
         close_button = ctk.CTkImage(light_image = Image.open("Images/close.png"), size = (22,22))
@@ -83,7 +85,7 @@ class Incoming_Approval_Segment(ctk.CTkFrame):
         ctk.CTkButton(self, text = self.booking[5], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 5)
         ctk.CTkButton(self, text = '', image = check_button, width = 10, hover_color = '#d4d4d4', fg_color = '#F0F0F0', bg_color = '#F0F0F0', command = self.accept_booking).grid(row = 0, column = 8)
         ctk.CTkButton(self, text = '', image = close_button, width = 10, hover_color = '#d4d4d4', fg_color = '#F0F0F0', bg_color = '#F0F0F0', command = self.decline_booking).grid(row = 0, column = 9)
-        self.toplevel_window = None
+        self.pack(pady = 10)
 
     def accept_booking(self):
         cursor.execute('UPDATE Timeslot SET status = TRUE WHERE timeslot_id = ?', (self.booking[7],))
@@ -93,17 +95,17 @@ class Incoming_Approval_Segment(ctk.CTkFrame):
 
     def decline_booking(self):
         cursor.execute('UPDATE Timeslot SET status = FALSE WHERE timeslot_id = ?', (self.card.card_id,))
-        cursor.execute('UPDATE Booking SET approved = FALSE WHERE booking_number = ?', (self.booking[0]))
+        cursor.execute('UPDATE Booking SET approved = FALSE WHERE booking_number = ?', (self.booking[0],))
         conn.commit()
         self.delete_approval_object()
 
     def delete_approval_object(self):
-        for approval in self.incoming_approvals: 
-            if approval.booking[0] == self.booking[0]:
-                for widget in approval.winfo_children():
+        for approval_object in self.incoming_approval_objects: 
+            if approval_object.booking[0] == self.booking[0]:
+                for widget in approval_object.winfo_children():
                     widget.destroy()
-                self.incoming_approvals.remove(approval)
-                del approval   
+                self.incoming_approval_objects.remove(approval_object)
+                del approval_object 
 
     def open_toplevel(self):
         if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
@@ -113,9 +115,9 @@ class Incoming_Approval_Segment(ctk.CTkFrame):
             self.toplevel_window.focus()
 
 class Scheduled_Booking_Segment(ctk.CTkFrame):
-    def __init__(self, parent, bookings, booking, card, user):
+    def __init__(self, parent, booking_objects, booking, card, user):
         super().__init__(master = parent)
-        self.bookings = bookings
+        self.booking_objects = booking_objects
         self.user = user
         self.card = card
         self.booking = booking
@@ -137,12 +139,12 @@ class Scheduled_Booking_Segment(ctk.CTkFrame):
         cursor.execute('UPDATE Timeslot SET status = FALSE WHERE timeslot_id = ?', (self.card.card_id,))
         cursor.execute('UPDATE Booking SET approved = FALSE WHERE booking_number = ?', (self.booking[0],))
         conn.commit()
-        for booking in self.bookings: 
-            if booking[0] == self.booking[0]:
-                for widget in booking.winfo_children():
+        for booking_object in self.booking_objects: 
+            if booking_object.booking[0] == self.booking[0]:
+                for widget in booking_object.winfo_children():
                     widget.destroy()
-                self.bookings.remove(booking)
-                del booking
+                self.booking_objects.remove(booking_object)
+                del booking_object 
   
     def open_toplevel(self):
         if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
@@ -212,6 +214,10 @@ class ContentFrame(ctk.CTkFrame):
         self.user = user
         self.card = card
         ctk.CTkLabel(self, text = 'Welcome!', font = ('Impact', 140)).place(anchor = 'center', relx = 0.5, rely = 0.5)
+
+#Account Edit
+    def account_edit_page(self):
+        pass
 
 #Facility Support
     def facility_support(self):
@@ -314,6 +320,7 @@ class ContentFrame(ctk.CTkFrame):
         cursor.execute('INSERT INTO Booking (facility_id, user_id, timeslot_id, booking_date) VALUES (?, ?, ?, ?)', (facility_id_db[0][0], self.user.user_id, self.timeslot_id_db[0][0], self.date))
         cursor.execute('UPDATE Timeslot SET status = NULL WHERE timeslot_id = ?', (self.timeslot_id_db[0][0],))
         conn.commit()
+        self.day.set('')
         self.timing.set('')
         self.timings_available_combobox.configure(state = 'disabled')
         messagebox.showinfo('Request Successful', f'Requested {self.facility.get()} from {self.start_time} to {self.end_time} on {self.day.get()} {self.date}')
@@ -373,72 +380,58 @@ class ContentFrame(ctk.CTkFrame):
                         (self.card.card_id, self.facility_booking_required[0][0], self.current_date, self.current_time))
         messagebox.showerror('', 'Access Denied')
 
-#Incoming Approvals
+#Approvals
     def approvals(self):
         self.clear_frame()
-        if self.user.user_id[0] == 'A':
-            bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id, User.first_name, User.last_name, User.class_grade, User.user_id
-                                        FROM Facility, Timeslot, Booking, User
-                                        WHERE Booking.facility_id = Facility.facility_id
-                                        AND Booking.approved IS NULL
-                                        AND Booking.timeslot_id = Timeslot.timeslot_id
-                                        AND User.user_id = Booking.user_id;''').fetchall()
+        if self.user.user_id[0] == 'A' or self.user.user_id[0] == 'T':
+            if self.user.user_id[0] == 'A':
+                bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id, User.first_name, User.last_name, User.class_grade, User.user_id
+                                            FROM Facility, Timeslot, Booking, User
+                                            WHERE Booking.facility_id = Facility.facility_id
+                                            AND Booking.approved IS NULL
+                                            AND Booking.timeslot_id = Timeslot.timeslot_id
+                                            AND User.user_id = Booking.user_id;''').fetchall()
+            elif self.user.user_id[0] == 'T':
+                bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id, User.first_name, User.last_name, User.class_grade, User.user_id
+                                            FROM Facility, Timeslot, Booking, User
+                                            WHERE Booking.facility_id = Facility.facility_id
+                                            AND Booking.approved IS NULL
+                                            AND Booking.facility_id = ?
+                                            AND Booking.timeslot_id = Timeslot.timeslot_id
+                                            AND User.user_id = Booking.user_id;''', (self.user.facility,)).fetchall()
             if bookings != []:
-                incoming_approvals = []
+                incoming_approval_object_frame = ctk.CTkScrollableFrame(self, width = 620, height = 342, corner_radius = 0, border_color = 'black', border_width = 2) #fg_color = '#F0F0F0')
+                incoming_approval_object_frame.place(anchor = 'n', relx = 0.5, rely = 0.36)
+                incoming_approval_objects = []
                 for booking in bookings:
-                    approval = Incoming_Approval_Segment(self, incoming_approvals, booking, self.card)
-                    incoming_approvals.append(approval)
+                    approval_object = Incoming_Approval_Segment(incoming_approval_object_frame, incoming_approval_objects, booking, self.card)
+                    incoming_approval_objects.append(approval_object)
                 title_font = ctk.CTkFont(family = 'Impact', size = 18, underline = True)
-                ctk.CTkLabel(self, text = 'Sent Approvals', font = ('Impact', 90)).place(anchor = 'center', relx = 0.5, rely = 0.15)
+                ctk.CTkLabel(self, text = 'Incoming Approvals', font = ('Impact', 90)).place(anchor = 'center', relx = 0.5, rely = 0.15)
                 ctk.CTkLabel(self, text = 'Facility', font = title_font).place(anchor = 'center', relx = 0.085, rely = 0.33)
                 ctk.CTkLabel(self, text = 'Start Time', font = title_font).place(anchor = 'center', relx = 0.24, rely = 0.33)
                 ctk.CTkLabel(self, text = 'End Time', font = title_font).place(anchor = 'center', relx = 0.39, rely = 0.33)
                 ctk.CTkLabel(self, text = 'Day', font = title_font).place(anchor = 'center', relx = 0.545, rely = 0.33)
                 ctk.CTkLabel(self, text = 'Date', font = title_font).place(anchor = 'center', relx = 0.695, rely = 0.33)
                 ctk.CTkLabel(self, text = 'Status', font = title_font).place(anchor = 'center', relx = 0.855, rely = 0.33)
-                for request in range(len(incoming_approvals)):
-                    incoming_approvals[request].place(anchor = 'center', relx = 0.5, rely = (request / 10) + 0.4)
             else:
                 ctk.CTkLabel(self, text = 'There are no incoming requests', font = ('Impact', 45)).place(anchor = 'center', relx = 0.5, rely = 0.5)   
-        elif self.user.user_id[0] == 'T':
-            bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id, User.first_name, User.last_name, User.class_grade, User.user_id
-                                        FROM Facility, Timeslot, Booking, User
-                                        WHERE Booking.facility_id = Facility.facility_id
-                                        AND Booking.approved IS NULL
-                                        AND Booking.facility_id = ?
-                                        AND Booking.timeslot_id = Timeslot.timeslot_id
-                                        AND User.user_id = Booking.user_id;''', (self.user.facility,)).fetchall()
-            if bookings != []:
-                incoming_approvals = []
-                for booking in bookings:
-                    approval = Incoming_Approval_Segment(self, incoming_approvals, booking, self.card)
-                    incoming_approvals.append(approval)
-                title_font = ctk.CTkFont(family = 'Impact', size = 18, underline = True)
-                ctk.CTkLabel(self, text = 'Sent Approvals', font = ('Impact', 90)).place(anchor = 'center', relx = 0.5, rely = 0.15)
-                ctk.CTkLabel(self, text = 'Facility', font = title_font).place(anchor = 'center', relx = 0.085, rely = 0.33)
-                ctk.CTkLabel(self, text = 'Start Time', font = title_font).place(anchor = 'center', relx = 0.24, rely = 0.33)
-                ctk.CTkLabel(self, text = 'End Time', font = title_font).place(anchor = 'center', relx = 0.39, rely = 0.33)
-                ctk.CTkLabel(self, text = 'Day', font = title_font).place(anchor = 'center', relx = 0.545, rely = 0.33)
-                ctk.CTkLabel(self, text = 'Date', font = title_font).place(anchor = 'center', relx = 0.695, rely = 0.33)
-                ctk.CTkLabel(self, text = 'Status', font = title_font).place(anchor = 'center', relx = 0.855, rely = 0.33)
-                for request in range(len(incoming_approvals)):
-                        incoming_approvals[request].place(anchor = 'center', relx = 0.5, rely = (request / 10) + 0.4)
-            else:
-                ctk.CTkLabel(self, text = 'You have no incoming requests', font = ('Impact', 50)).place(anchor = 'center', relx = 0.5, rely = 0.5)
-        elif self.user.user_id[0] == 'S':
+        else:
             bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id 
                                         FROM Facility, Timeslot, Booking 
                                         WHERE Facility.facility_id = Booking.facility_id
                                             AND Timeslot.timeslot_id = Booking.timeslot_id
                                             AND Booking.user_id = ?;''', (self.user.user_id,)).fetchall()
             if bookings != []:
-                outgoing_approvals = []
+                outgoing_approval_object_frame = ctk.CTkScrollableFrame(self, width = 620, height = 342, corner_radius = 0, border_color = 'black', border_width = 2) #fg_color = '#F0F0F0')
+                outgoing_approval_object_frame.place(anchor = 'n', relx = 0.5, rely = 0.36)
+                outgoing_approval_objects = []
                 for booking in bookings:
                     if booking[6] == None: status = 'Pending'
                     elif booking[6] == 1: status = 'Approved'
                     else: status = 'Declined'
-                    approval = Outgoing_Approval_Segment(self, booking, status, outgoing_approvals)
-                    outgoing_approvals.append(approval)
+                    approval_object = Outgoing_Approval_Segment(outgoing_approval_object_frame, booking, status, outgoing_approval_objects)
+                    outgoing_approval_objects.append(approval_object)
                 title_font = ctk.CTkFont(family = 'Impact', size = 18, underline = True)
                 ctk.CTkLabel(self, text = 'Sent Approvals', font = ('Impact', 90)).place(anchor = 'center', relx = 0.5, rely = 0.15)
                 ctk.CTkLabel(self, text = 'Facility', font = title_font).place(anchor = 'center', relx = 0.085, rely = 0.33)
@@ -447,8 +440,6 @@ class ContentFrame(ctk.CTkFrame):
                 ctk.CTkLabel(self, text = 'Day', font = title_font).place(anchor = 'center', relx = 0.545, rely = 0.33)
                 ctk.CTkLabel(self, text = 'Date', font = title_font).place(anchor = 'center', relx = 0.695, rely = 0.33)
                 ctk.CTkLabel(self, text = 'Status', font = title_font).place(anchor = 'center', relx = 0.855, rely = 0.33)
-                for request in range(len(outgoing_approvals)):
-                    outgoing_approvals[request].place(anchor = 'center', relx = 0.5, rely = (request / 10) + 0.4)
             else:
                 ctk.CTkLabel(self, text = 'You have no requests sent', font = ('Impact', 50)).place(anchor = 'center', relx = 0.5, rely = 0.5)
 
@@ -471,22 +462,20 @@ class ContentFrame(ctk.CTkFrame):
                                         AND User.user_id = Booking.user_id
                                         AND Facility.facility_id = ?;''', (self.user.facility_id,)).fetchall()
         if bookings != []:
-            incoming_approvals = []
+            booking_objects = []
             bookings_frame = ctk.CTkScrollableFrame(self, width = 620, height = 342, corner_radius = 0, border_color = 'black', border_width = 2) #fg_color = '#F0F0F0')
             bookings_frame.place(anchor = 'n', relx = 0.5, rely = 0.36)
             for booking in bookings:
-                approval = Scheduled_Booking_Segment(bookings_frame, bookings, booking, self.card, self.user)
-                incoming_approvals.append(approval)
+                approval_object = Scheduled_Booking_Segment(bookings_frame, booking_objects, booking, self.card, self.user)
+                booking_objects.append(approval_object)
             title_font = ctk.CTkFont(family = 'Impact', size = 18, underline = True)
-            ctk.CTkLabel(self, text = 'Schedule Bookings', font = ('Impact', 75)).place(anchor = 'center', relx = 0.5, rely = 0.15)
+            ctk.CTkLabel(self, text = 'Scheduled Bookings', font = ('Impact', 75)).place(anchor = 'center', relx = 0.5, rely = 0.15)
             ctk.CTkLabel(self, text = 'User ID', font = title_font).place(anchor = 'center', relx = 0.085, rely = 0.33)
             ctk.CTkLabel(self, text = 'Facility', font = title_font).place(anchor = 'center', relx = 0.24, rely = 0.33)
             ctk.CTkLabel(self, text = 'Start Time', font = title_font).place(anchor = 'center', relx = 0.39, rely = 0.33)
             ctk.CTkLabel(self, text = 'End Time', font = title_font).place(anchor = 'center', relx = 0.545, rely = 0.33)
             ctk.CTkLabel(self, text = 'Day', font = title_font).place(anchor = 'center', relx = 0.695, rely = 0.33)
             ctk.CTkLabel(self, text = 'Date', font = title_font).place(anchor = 'center', relx = 0.855, rely = 0.33)
-            #for request in range(len(incoming_approvals)):
-                #incoming_approvals[request].place(anchor = 'center', relx = 0.5, rely = (request / 10) + 0.4)
         else:
             ctk.CTkLabel(self, text = 'Empty Schedule', font = ('Impact', 50)).place(anchor = 'center', relx = 0.5, rely = 0.5)
 
