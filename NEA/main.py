@@ -26,7 +26,7 @@ class User:
         self.login_count = login_count
 
 class Card:
-    def __init__(self, card_id = 0, tag_id = ''):
+    def __init__(self, card_id, tag_id):
         self.card_id = card_id
         self.tag_id = tag_id
 
@@ -217,7 +217,75 @@ class ContentFrame(ctk.CTkFrame):
 
 #Account Edit
     def account_edit_page(self):
-        pass
+        self.clear_frame()
+        self.password_entry = ctk.StringVar()
+        self.confirm_password_entry = ctk.StringVar()
+
+        title_font = ctk.CTkFont(family = 'Impact', size = 40, underline = True)
+        info_font = ctk.CTkFont(family = 'Impact', size = 40)
+        ctk.CTkLabel(self, text = 'Profile', font = ('Impact', 75)).place(anchor = 'center', relx = 0.5, rely = 0.15)
+        ctk.CTkLabel(self, text = 'First Name:', font = title_font).place(anchor = 'center', relx = 0.2, rely = 0.30)
+        last_name_label = ctk.CTkLabel(self, text = 'Last Name:', font = title_font).place(anchor = 'center', relx = 0.2, rely = 0.45)
+        user_id_label = ctk.CTkLabel(self, text = 'User ID:', font = title_font).place(anchor = 'center', relx = 0.2, rely = 0.75)
+        card_id_label = ctk.CTkLabel(self, text = 'Card ID:', font = title_font).place(anchor = 'center', relx = 0.2, rely = 0.9)
+        facility_class_label = ctk.CTkLabel(self, text = '', font = info_font).place(anchor = 'center', relx = 0.5, rely = 0.6)
+        facility_class = ctk.CTkLabel(self, text = '', font = info_font).place(anchor = 'center', relx = 0.5, rely = 0.6)
+        ctk.CTkLabel(self, text = self.user.first_name, font = info_font).place(anchor = 'center', relx = 0.5, rely = 0.30)
+        last_name = ctk.CTkLabel(self, text = self.user.last_name, font = info_font).place(anchor = 'center', relx = 0.5, rely = 0.45)
+        user_id = ctk.CTkLabel(self, text = self.user.user_id, font = info_font).place(anchor = 'center', relx = 0.5, rely = 0.75)
+        card_id = ctk.CTkLabel(self, text = self.card.card_id, font = info_font).place(anchor = 'center', relx = 0.5, rely = 0.9)
+        if self.user.user_id[0] == 'A':
+            user_id_label.place(anchor = 'center', relx = 0.2, rely = 0.45)
+            user_id.place(anchor = 'center', relx = 0.5, rely = 0.45)
+            card_id_label.place(anchor = 'center', relx = 0.2, rely = 0.6)
+            card_id.place(anchor = 'center', relx = 0.5, rely = 0.6)
+        elif self.user.user_id[0] == 'T' or self.user.user_id[0] == 'S':
+            if self.user.user_id[0] == 'T':
+                last_name_label.place(anchor = 'center', relx = 0.2, rely = 0.45)
+                last_name.place(relx = 0.5, rely = 0.45) 
+                facility_name = cursor.execute('SELECT facility_name FROM Facility WHERE facility_id = ?', (self.user.facility_id,)).fetchall()
+                facility_class_label.set(text = 'Facility: ')
+                facility_class_label.place(anchor = 'center', relx = 0.5, rely = 0.6)
+                facility_class_label.place(anchor = 'center', relx = 0.2, rely = 0.6)
+            ctk.CTkLabel(self, text = 'Facility:', font = title_font).place(anchor = 'center', relx = 0.2, rely = 0.6)
+            ctk.CTkLabel(self, text = self.user.user_id, font = info_font).place(anchor = 'center', relx = 0.5, rely = 0.75)
+            ctk.CTkLabel(self, text = self.card.card_id, font = info_font).place(anchor = 'center', relx = 0.5, rely = 0.9)
+        else:
+            ctk.CTkLabel(self, text = 'Last Name:', font = title_font).place(anchor = 'center', relx = 0.2, rely = 0.45)
+            ctk.CTkLabel(self, text = 'Class:', font = title_font).place(anchor = 'center', relx = 0.2, rely = 0.6)
+            ctk.CTkLabel(self, text = self.user.grade, font = info_font).place(anchor = 'center', relx = 0.5, rely = 0.6)
+            ctk.CTkLabel(self, text = self.user.user_id, font = info_font).place(anchor = 'center', relx = 0.5, rely = 0.75)
+            ctk.CTkLabel(self, text = self.card.card_id, font = info_font).place(anchor = 'center', relx = 0.5, rely = 0.9)            
+        ctk.CTkLabel(self, text = 'New Password', font = ('Impact', 20)).place(anchor = 'center', relx = 0.8, rely = 0.4)
+        ctk.CTkEntry(self, textvariable = self.password_entry, width = 190, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.8, rely = 0.45)
+        ctk.CTkLabel(self, text = 'Confirm Password', font = ('Impact', 20)).place(anchor = 'center', relx = 0.8, rely = 0.6)
+        ctk.CTkEntry(self, textvariable = self.confirm_password_entry, width = 190, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.8, rely = 0.65)
+        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', text = 'Set', font = ('Impact', 20), command = self.account_edit_func).place(anchor = 'center', relx = 0.8, rely = 0.8)        
+
+    def account_edit_func(self):
+        pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+        if self.password_entry.get() == '' or self.confirm_password_entry.get() == '':
+            messagebox.showerror("Register Failed", "All fields must be filled out.")
+        elif self.password_entry.get() != self.confirm_password_entry.get():
+            messagebox.showerror("Register Failed", "Please make sure the passwords are the same.")
+        elif not re.match(pattern, self.password_entry.get()):
+            messagebox.showerror("Register Failed", "Password is not strong enough. Please include: 8 Characters minimum, A capital letter, A small letter, A number, A symbol.")
+        elif re.match(pattern, self.password_entry.get()):
+            hashed_password, salt = self.password_hash()
+            cursor.execute('''UPDATE User 
+                            SET hashed_password = ?, salt = ?
+                            WHERE user_id = ?;''', 
+                            (hashed_password, salt, self.user.user_id))
+            messagebox.showinfo('Password Successfully Set', 'Please login with the new password.')
+            conn.commit()
+            self.password_entry.set('')
+            self.confirm_password_entry.set('')
+    
+    def password_hash(self):
+        salt = secrets.token_bytes(16)
+        salted_password = self.password_entry.get().encode('utf-8') + salt
+        hashed_password = hashlib.sha256(salted_password).hexdigest()
+        return hashed_password, salt
 
 #Facility Support
     def facility_support(self):
@@ -565,21 +633,21 @@ class SideBar(ctk.CTkFrame):
         super().__init__(parent, width = 200, height = 600, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
         profile_icon = ctk.CTkImage(light_image = Image.open("Images/profile.png"), size = (70,70))
         if login.user.user_id[0] == 'A':
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.15)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.account_edit_page).place(anchor = 'center', relx = 0.5, rely = 0.15)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Tap In', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.card_tap_in_page).place(anchor = 'center', relx = 0.5, rely = 0.3)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Schedule Viewer', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.schedule_viewer).place(anchor = 'center', relx = 0.5, rely = 0.4)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approvals).place(anchor = 'center', relx = 0.5, rely = 0.5)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Analytics', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.7)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'All Records', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.all_records_page).place(anchor = 'center', relx = 0.5, rely = 0.8)
         elif login.user.user_id[0] == 'T':
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.15)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.account_edit_page).place(anchor = 'center', relx = 0.5, rely = 0.15)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Tap In', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.card_tap_in_page).place(anchor = 'center', relx = 0.5, rely = 0.3)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Schedule Viewer', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.schedule_viewer).place(anchor = 'center', relx = 0.5, rely = 0.4)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approvals).place(anchor = 'center', relx = 0.5, rely = 0.5)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Analytics', text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.7)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'All Records', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.all_records_page).place(anchor = 'center', relx = 0.5, rely = 0.8)
         elif login.user.user_id[0] == 'S':
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.15)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.account_edit_page).place(anchor = 'center', relx = 0.5, rely = 0.15)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Tap In', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.card_tap_in_page).place(anchor = 'center', relx = 0.5, rely = 0.3)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Facility Support', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.facility_support).place(anchor = 'center', relx = 0.5, rely = 0.4)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'View Sent Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approvals).place(anchor = 'center', relx = 0.5, rely = 0.5)
