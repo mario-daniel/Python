@@ -1,16 +1,18 @@
 from tkinter import messagebox
 from PIL import Image
 from datetime import datetime, timedelta
-import smtplib, hashlib, secrets, re, sqlite3, customtkinter as ctk      
+from ttkbootstrap.dialogs import Querybox
+import smtplib, hashlib, secrets, re, sqlite3, customtkinter as ctk, matplotlib.pyplot as plt
 
 conn = sqlite3.connect('rfid')
 cursor = conn.cursor()
 
-window = ctk.CTk(fg_color = '#ff7e75')
+theme_color = '#ff7e75'
+window = ctk.CTk(fg_color = theme_color)
 window.title('RFID System')
 window.geometry('600x600')
 window.resizable(False, False)
-window_frame = ctk.CTkFrame(window, fg_color = '#ff7e75', corner_radius = 0, border_color = 'black', border_width = 2)
+window_frame = ctk.CTkFrame(window, fg_color = theme_color, corner_radius = 0, border_color = 'black', border_width = 2)
 window_frame.pack(expand = True, fill = 'both')
 ctk.set_appearance_mode('light')
 
@@ -152,7 +154,7 @@ class StudentProfile(ctk.CTkToplevel):
         self.geometry("300x300")
         self.title('Student Info')
 
-        window_frame = ctk.CTkFrame(self, width = 300, height = 300, border_color = 'black', border_width = 2, fg_color = '#ff7e75', corner_radius = 0)
+        window_frame = ctk.CTkFrame(self, width = 300, height = 300, border_color = 'black', border_width = 2, fg_color = theme_color, corner_radius = 0)
         window_frame.place(anchor = 'center', relx = 0.5, rely = 0.5)
 
         info_frame = ctk.CTkFrame(self, width = 250, height = 250, border_color = 'black', border_width = 2, fg_color = '#F0F0F0', corner_radius = 0)
@@ -287,7 +289,7 @@ class ContentFrame(ctk.CTkFrame):
         ctk.CTkLabel(self, text = 'Choose Problem', font = ('Impact', 37)).place(anchor = 'center', relx = 0.3, rely = 0.5)
         self.problem_combobox = ctk.CTkComboBox(self, state = 'readonly', border_color = 'black', button_color = 'black', width = 250, dropdown_font = ('Impact', 15), variable = self.problem, values = self.problems)
         self.problem_combobox.place(anchor = 'center', relx = 0.7, rely = 0.5)
-        self.other_button = ctk.CTkSwitch(self, text = 'Other', command = self.other, variable = self.other_bool, progress_color = '#ff7e75', button_color = 'black')
+        self.other_button = ctk.CTkSwitch(self, text = 'Other', command = self.other, variable = self.other_bool, progress_color = theme_color, button_color = 'black')
         self.other_button.place(anchor = 'center', relx = 0.5, rely = 0.6)
         self.other_texbox = ctk.CTkTextbox(self, state = 'disabled', width = 400, height = 100, border_color = 'black', border_width = 2)
         self.other_texbox.place(anchor = 'n', relx = 0.5, rely = 0.65)
@@ -539,11 +541,11 @@ class ContentFrame(ctk.CTkFrame):
     def all_records(self):
         self.clear_frame()
         self.occupations = ('All', 'Teachers', 'Students')
-        self.facilities = ('All', 'Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
+        self.facilities = ('All', 'Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
         heading_font = ctk.CTkFont(family = 'Impact', size = 90, underline = True)
         ctk.CTkLabel(self, text = 'Records', font = heading_font).place(anchor = 'center', relx = 0.34, rely = 0.18)
-        ctk.CTkComboBox(self, variable = self.selection_occupation, values = self.occupations, state = 'readonly').place(anchor = 'center', relx = 0.8, rely = 0.08)
-        self.facility_combobox = ctk.CTkComboBox(self, variable = self.selection_facility, values = self.facilities, state = 'readonly')
+        ctk.CTkComboBox(self, variable = self.selection_occupation, values = self.occupations, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.8, rely = 0.08)
+        self.facility_combobox = ctk.CTkComboBox(self, variable = self.selection_facility, values = self.facilities, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15))
         self.facility_combobox.place(anchor = 'center', relx = 0.8, rely = 0.18)
         ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', text = 'Search', font = ('Impact', 20), command = self.all_records).place(anchor = 'center', relx = 0.8, rely = 0.28)
         if self.user.user_id[0] == 'A':
@@ -594,7 +596,7 @@ class ContentFrame(ctk.CTkFrame):
                                     AND Facility.facility_id = ?;''', (self.user.facility_id,)).fetchall()
         if records != []:
             record_objects = []
-            records_frame = ctk.CTkScrollableFrame(self, width = 620, height = 330, corner_radius = 0, border_color = 'black', border_width = 2) #fg_color = '#F0F0F0')
+            records_frame = ctk.CTkScrollableFrame(self, width = 620, height = 330, corner_radius = 0, border_color = 'black', border_width = 2)
             records_frame.place(anchor = 'n', relx = 0.5, rely = 0.382)
             for record in records:
                 record_obj = Records(records_frame, self.user, record, record_objects)
@@ -610,7 +612,137 @@ class ContentFrame(ctk.CTkFrame):
 
 #Analytics
     def analytics_page(self):
+        self.clear_frame()
+        ctk.CTkButton(self, text = 'Bookings per facility', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.bookings_per_facility_page).place(anchor = 'center', relx = 0.5, rely = 0.1)
         
+    def bookings_per_facility_page(self):
+        self.clear_frame()
+        self.options = ('All-Time', 'Day', 'Date')
+        self.option = ctk.StringVar()
+        self.option.set('All-Time')
+        self.facilities = ('All', 'Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
+        self.facility = ctk.StringVar()
+        self.facility.set('All')
+        self.statuses = ('All', 'Approved', 'Pending', 'Declined')
+        self.statuses_dict = {'Approved': 1, 'Pending': None, 'Declined': 0}
+        self.status = ctk.StringVar()
+        self.status.set('All')
+        self.days = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+        self.day = ctk.StringVar()
+        ctk.CTkComboBox(self, variable = self.option, values = self.options, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15), command = self.options_choice).place(anchor = 'center', relx = 0.5, rely = 0.1)
+        ctk.CTkComboBox(self, variable = self.facility, values = self.facilities, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.5, rely = 0.2)
+        ctk.CTkComboBox(self, variable = self.status, values = self.statuses, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.5, rely = 0.3)
+        self.days_combobox = ctk.CTkComboBox(self, variable = self.day, values = self.days, state = 'disabled', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15))
+        self.days_combobox.place(anchor = 'center', relx = 0.5, rely = 0.4)
+        self.calender_button = ctk.CTkButton(self, state = 'disabled', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Select Date", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.get_calender_date)
+        self.calender_button.place(anchor = 'center', relx = 0.5, rely = 0.5)
+        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Generate', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.bookings_per_facility_func).place(anchor = 'center', relx = 0.5, rely = 0.6)
+    
+    def options_choice(self, event):
+        if event == 'Day':
+            self.days_combobox.configure(state = 'readonly')
+            self.calender_button.configure(state = 'disabled')
+        elif event == 'Date':
+            self.days_combobox.configure(state = 'disabled')
+            self.calender_button.configure(state = 'normal')
+
+    def get_calender_date(self):
+        calender = Querybox()
+        self.date = calender.get_date(title = 'Calender', bootstyle = 'dark')
+        self.calender_button.configure(text = self.date)
+
+    def bookings_per_facility_func(self):
+        if self.option.get() == 'All-Time':
+            if self.facility.get() == 'All':
+                if self.status.get() == 'All':
+                    result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
+                                            FROM Booking, Facility
+                                            WHERE Booking.facility_id = Facility.facility_id
+                                            GROUP BY facility_name
+                                            ORDER BY booking_count DESC''').fetchall()
+                    title = 'Total Booking Counts Per Facility'
+                else:
+                    result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
+                                            FROM Booking, Facility
+                                            WHERE Booking.facility_id = Facility.facility_id
+                                            AND Booking.approved = ?
+                                            GROUP BY facility_name
+                                            ORDER BY booking_count DESC''', (self.statuses[self.status.get()],)).fetchall()
+                    title = f'Total Booking Counts Per Facility ({self.statuses_dict[self.status.get()]})'
+            else:
+                if self.status.get() == 'All':
+                    result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
+                                            FROM Booking, Facility
+                                            WHERE Booking.facility_id = Facility.facility_id
+                                            AND Facility.facility_name = ?
+                                            GROUP BY facility_name
+                                            ORDER BY booking_count DESC''', (self.facility.get(),)).fetchall()
+                    title = f'Total Booking Counts Per Facility ({self.facility.get()})'
+                else:
+                    result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
+                                            FROM Booking, Facility
+                                            WHERE Booking.facility_id = Facility.facility_id
+                                            AND Facility.facility_name = ?
+                                            AND Booking.approved = ?
+                                            GROUP BY facility_name
+                                            ORDER BY booking_count DESC''', 
+                                            (self.facility.get(), self.statuses_dict[self.status.get()])).fetchall()
+                    title = f'Total Booking Counts Per Facility ({self.facility.get()})({self.status.get()})'
+        elif self.option.get() == 'Day':
+            if self.facility.get() == 'All':
+                if self.status.get() == 'All':
+                    result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
+                                            FROM Booking, Facility, Timeslot
+                                            WHERE Booking.facility_id = Facility.facility_id
+                                            AND Booking.timeslot_id = Timeslot.timeslot_id
+                                            AND Timeslot.day = ?
+                                            GROUP BY facility_name
+                                            ORDER BY booking_count DESC''', (self.day.get(),)).fetchall()
+                    title = f'Total Booking Counts Per Facility ({self.day.get()})'
+                else:
+                    result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
+                                            FROM Booking, Facility, Timeslot
+                                            WHERE Booking.facility_id = Facility.facility_id
+                                            AND Booking.timeslot_id = Timeslot.timeslot_id
+                                            AND Timeslot.day = ?
+                                            AND Booking.approved = ?
+                                            GROUP BY facility_name
+                                            ORDER BY booking_count DESC''',
+                                            (self.day.get(), self.statuses_dict[self.status.get()])).fetchall()
+                    title = f'Total Booking Counts Per Facility ({self.day.get()})({self.status.get()})'
+            else:
+                if self.status.get() == 'All':
+                    result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
+                                            FROM Booking, Facility, Timeslot
+                                            WHERE Booking.facility_id = Facility.facility_id
+                                            AND Booking.timeslot_id = Timeslot.timeslot_id
+                                            AND Timeslot.day = ?
+                                            AND Facility.facility_name = ?
+                                            GROUP BY facility_name
+                                            ORDER BY booking_count DESC''', (self.day.get(), self.facility.get())).fetchall()
+                    title = f'Total Booking Counts Per Facility ({self.day.get()})({self.facility.get()})'
+                else:
+                    result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
+                                            FROM Booking, Facility, Timeslot
+                                            WHERE Booking.facility_id = Facility.facility_id
+                                            AND Booking.timeslot_id = Timeslot.timeslot_id
+                                            AND Timeslot.day = ?
+                                            AND Facility.facility_name = ?
+                                            AND Booking.approved = ?
+                                            GROUP BY facility_name
+                                            ORDER BY booking_count DESC''', (self.day.get(), self.facility.get(), self.statuses_dict[self.status.get()])).fetchall()
+                    title = f'Total Booking Counts Per Facility ({self.day.get()})({self.facility.get()})({self.status.get()})'
+        else:
+            pass
+
+        facilities, counts = zip(*result)
+        plt.figure(figsize = (10, 6), edgecolor = 'black')
+        plt.bar(facilities, counts, color = theme_color, edgecolor = 'black')
+        plt.title(title)
+        plt.xlabel('Facility')
+        plt.ylabel('Booking Count')
+        plt.grid(axis='y')
+        plt.show()
 
 #Reset Content Frame
     def clear_frame(self):
