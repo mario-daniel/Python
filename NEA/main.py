@@ -2,7 +2,7 @@ from tkinter import messagebox
 from PIL import Image
 from datetime import datetime, timedelta
 from ttkbootstrap.dialogs import Querybox
-import smtplib, hashlib, secrets, re, sqlite3, customtkinter as ctk, matplotlib.pyplot as plt, matplotlib.dates as mdates
+import smtplib, hashlib, secrets, re, sqlite3, mplcursors, customtkinter as ctk, matplotlib.pyplot as plt, matplotlib.dates as mdates
 
 conn = sqlite3.connect('rfid')
 cursor = conn.cursor()
@@ -614,7 +614,7 @@ class ContentFrame(ctk.CTkFrame):
     def analytics_page(self):
         self.clear_frame()
         ctk.CTkButton(self, text = 'Bookings per facility', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.bookings_per_facility_page).place(anchor = 'center', relx = 0.5, rely = 0.1)
-        ctk.CTkButton(self, text = 'Booking trends over time', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.bookings_per_facility_page).place(anchor = 'center', relx = 0.5, rely = 0.2)
+        ctk.CTkButton(self, text = 'Booking trends over time', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.booking_trends_over_time_page).place(anchor = 'center', relx = 0.5, rely = 0.2)
 
     def bookings_per_facility_page(self):
         self.clear_frame()
@@ -630,7 +630,7 @@ class ContentFrame(ctk.CTkFrame):
         self.status.set('All')
         self.days = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
         self.day = ctk.StringVar()
-        ctk.CTkComboBox(self, variable = self.option, values = self.options, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15), command = self.options_choice).place(anchor = 'center', relx = 0.5, rely = 0.1)
+        ctk.CTkComboBox(self, variable = self.option, values = self.options, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15), command = self.options_choice_bookings_per_facility_page).place(anchor = 'center', relx = 0.5, rely = 0.1)
         ctk.CTkComboBox(self, variable = self.facility, values = self.facilities, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.5, rely = 0.2)
         ctk.CTkComboBox(self, variable = self.status, values = self.statuses, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.5, rely = 0.3)
         self.days_combobox = ctk.CTkComboBox(self, variable = self.day, values = self.days, state = 'disabled', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15))
@@ -641,7 +641,7 @@ class ContentFrame(ctk.CTkFrame):
         self.end_date_button.place(anchor = 'center', relx = 0.5, rely = 0.6)
         ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Generate', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.bookings_per_facility_func).place(anchor = 'center', relx = 0.5, rely = 0.7)
     
-    def options_choice(self, event):
+    def options_choice_bookings_per_facility_page(self, event):
         if event == 'Day':
             self.days_combobox.configure(state = 'readonly')
             self.start_date_button.configure(state = 'disabled')
@@ -746,9 +746,8 @@ class ContentFrame(ctk.CTkFrame):
             if self.facility.get() == 'All':
                 if self.status.get() == 'All':
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
-                                            FROM Booking, Facility, Timeslot
+                                            FROM Booking, Facility
                                             WHERE Booking.facility_id = Facility.facility_id
-                                            AND Booking.timeslot_id = Timeslot.timeslot_id
                                             AND booking_date >= ?
                                             AND booking_date <= ?
                                             GROUP BY facility_name
@@ -756,9 +755,8 @@ class ContentFrame(ctk.CTkFrame):
                     title = f'Total Booking Counts Per Facility ({self.start_date}) to ({self.end_date})'
                 else:
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
-                                            FROM Booking, Facility, Timeslot
+                                            FROM Booking, Facility
                                             WHERE Booking.facility_id = Facility.facility_id
-                                            AND Booking.timeslot_id = Timeslot.timeslot_id
                                             AND booking_date >= ?
                                             AND booking_date <= ?
                                             AND Booking.approved = ?
@@ -769,9 +767,8 @@ class ContentFrame(ctk.CTkFrame):
             else:
                 if self.status.get() == 'All':
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
-                                            FROM Booking, Facility, Timeslot
+                                            FROM Booking, Facility
                                             WHERE Booking.facility_id = Facility.facility_id
-                                            AND Booking.timeslot_id = Timeslot.timeslot_id
                                             AND booking_date >= ?
                                             AND booking_date <= ?
                                             AND Facility.facility_name = ?
@@ -780,9 +777,8 @@ class ContentFrame(ctk.CTkFrame):
                     title = f'Total Booking Counts Per Facility ({self.start_date}) to ({self.end_date})({self.facility.get()})'
                 else:
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
-                                            FROM Booking, Facility, Timeslot
+                                            FROM Booking, Facility
                                             WHERE Booking.facility_id = Facility.facility_id
-                                            AND Booking.timeslot_id = Timeslot.timeslot_id
                                             AND booking_date >= ?
                                             AND booking_date <= ?
                                             AND Facility.facility_name = ?
@@ -798,23 +794,34 @@ class ContentFrame(ctk.CTkFrame):
             plt.xlabel('Facility')
             plt.ylabel('Booking Count')
             plt.grid(axis='y')
+            mplcursors.cursor(hover=True).connect("add", lambda sel: sel.annotation.set_text(f'Value: {counts[sel.target.index]}'))
             plt.show()
         else:
             messagebox.showinfo('No Results', 'There are no bookings of this configuration.')
 
     def booking_trends_over_time_page(self):
+        self.clear_frame()
         self.options = ('All-Time', 'Date')
         self.option = ctk.StringVar()
         self.option.set('All-Time')
         self.facilities = ('All', 'Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
         self.facility = ctk.StringVar()
         self.facility.set('All')
-        ctk.CTkComboBox(self, variable = self.facility, values = self.facilities, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.5, rely = 0.1)
+        ctk.CTkComboBox(self, variable = self.option, values = self.options, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15), command = self.options_choice_booking_trends_over_time_page).place(anchor = 'center', relx = 0.5, rely = 0.1)
+        ctk.CTkComboBox(self, variable = self.facility, values = self.facilities, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.5, rely = 0.2)
         self.start_date_button = ctk.CTkButton(self, state = 'disabled', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Select Start Date", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.get_start_date)
-        self.start_date_button.place(anchor = 'center', relx = 0.5, rely = 0.2)
+        self.start_date_button.place(anchor = 'center', relx = 0.5, rely = 0.3)
         self.end_date_button = ctk.CTkButton(self, state = 'disabled', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Select End Date", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.get_end_date)
-        self.end_date_button.place(anchor = 'center', relx = 0.5, rely = 0.3)
-        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Generate', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.booking_trends_over_time_func).place(anchor = 'center', relx = 0.5, rely = 0.4)
+        self.end_date_button.place(anchor = 'center', relx = 0.5, rely = 0.4)
+        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Generate', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.booking_trends_over_time_func).place(anchor = 'center', relx = 0.5, rely = 0.5)
+
+    def options_choice_booking_trends_over_time_page(self, event):
+            if event == 'All-Time':
+                self.start_date_button.configure(state = 'disabled')
+                self.end_date_button.configure(state = 'disabled')
+            else:
+                self.start_date_button.configure(state = 'normal')
+                self.end_date_button.configure(state = 'normal')
 
     def booking_trends_over_time_func(self):
         if self.option.get() == 'All-Time':
@@ -822,20 +829,31 @@ class ContentFrame(ctk.CTkFrame):
                 result = cursor.execute('''SELECT booking_date, COUNT(*) as booking_count
                                         FROM Booking
                                         GROUP BY booking_date
-                                        ORDER BY booking_date''').fetchall()
+                                        ORDER BY booking_date;''').fetchall()
             else:
                 result = cursor.execute('''SELECT booking_date, COUNT(*) as booking_count
                                         FROM Booking, Facility
                                         WHERE Booking.facility_id = Facility.facility_id
-                                        facility_name = ?
+                                        AND facility_name = ?
                                         GROUP BY booking_date
-                                        ORDER BY booking_date''', (self.facility.get(),)).fetchall()    
+                                        ORDER BY booking_date;''', (self.facility.get(),)).fetchall()    
         else:
             if self.facility.get() == 'All':
                 result = cursor.execute('''SELECT booking_date, COUNT(*) as booking_count
                                         FROM Booking
+                                        WHERE booking_date >= ?
+                                        AND booking_date <= ?
                                         GROUP BY booking_date
-                                        ORDER BY booking_date''').fetchall()           
+                                        ORDER BY booking_date;''', (self.start_date, self.end_date)).fetchall()   
+            else:
+                result = cursor.execute('''SELECT booking_date, COUNT(*) as booking_count
+                                        FROM Booking
+                                        WHERE Booking.facility_id = Facility.facility_id
+                                        AND booking_date >= ?
+                                        AND booking_date <= ?
+                                        AND Facility.facility_name = ?
+                                        GROUP BY booking_date
+                                        ORDER BY booking_date;''', (self.start_date, self.end_date, self.facility.get())).fetchall()            
         if result != []:
             # Separate dates and counts
             dates, counts = zip(*result)
@@ -854,11 +872,31 @@ class ContentFrame(ctk.CTkFrame):
             plt.gca().xaxis.set_major_locator(mdates.MonthLocator())
             plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
             plt.gcf().autofmt_xdate()
-
             plt.show()
         else:
             messagebox.showinfo('No Results', 'There are no bookings of this configuration.')
 
+    def popular_timings_page(self):
+        self.clear_frame()
+        self.options = ('All-Time', 'Day', 'Date')
+        self.option = ctk.StringVar()
+        self.option.set('All-Time')
+        self.facilities = ('All', 'Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
+        self.facility = ctk.StringVar()
+        self.facility.set('All')
+        self.days = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
+        self.day = ctk.StringVar()
+        ctk.CTkComboBox(self, variable = self.option, values = self.options, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15), command = self.options_choice_bookings_per_facility_page).place(anchor = 'center', relx = 0.5, rely = 0.1)
+        ctk.CTkComboBox(self, variable = self.facility, values = self.facilities, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.5, rely = 0.2)
+        ctk.CTkComboBox(self, variable = self.status, values = self.statuses, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.5, rely = 0.3)
+        self.days_combobox = ctk.CTkComboBox(self, variable = self.day, values = self.days, state = 'disabled', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15))
+        self.days_combobox.place(anchor = 'center', relx = 0.5, rely = 0.4)
+        self.start_date_button = ctk.CTkButton(self, state = 'disabled', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Select Start Date", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.get_start_date)
+        self.start_date_button.place(anchor = 'center', relx = 0.5, rely = 0.5)
+        self.end_date_button = ctk.CTkButton(self, state = 'disabled', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Select End Date", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.get_end_date)
+        self.end_date_button.place(anchor = 'center', relx = 0.5, rely = 0.6)
+        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Generate', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.bookings_per_facility_func).place(anchor = 'center', relx = 0.5, rely = 0.7)
+        
 #Reset Content Frame
     def clear_frame(self):
         for widget in self.winfo_children():
