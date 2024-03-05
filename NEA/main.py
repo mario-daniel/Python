@@ -613,8 +613,9 @@ class ContentFrame(ctk.CTkFrame):
 #Analytics
     def analytics_page(self):
         self.clear_frame()
-        ctk.CTkButton(self, text = 'Bookings per facility', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.bookings_per_facility_page).place(anchor = 'center', relx = 0.5, rely = 0.1)
-        ctk.CTkButton(self, text = 'Booking trends over time', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.booking_trends_over_time_page).place(anchor = 'center', relx = 0.5, rely = 0.2)
+        ctk.CTkLabel(self, text = 'Analytics', font = ('Impact', 75)).place(anchor = 'center', relx = 0.5, rely = 0.15)
+        ctk.CTkButton(self, text = 'Bookings per facility', width = 200, height = 200, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.bookings_per_facility_page).place(anchor = 'e', relx = 0.45, rely = 0.5)
+        ctk.CTkButton(self, text = 'Booking trends over time', width = 200, height = 200, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.booking_trends_over_time_page).place(anchor = 'w', relx = 0.55, rely = 0.5)
 
     def bookings_per_facility_page(self):
         self.clear_frame()
@@ -875,27 +876,6 @@ class ContentFrame(ctk.CTkFrame):
             plt.show()
         else:
             messagebox.showinfo('No Results', 'There are no bookings of this configuration.')
-
-    def popular_timings_page(self):
-        self.clear_frame()
-        self.options = ('All-Time', 'Day', 'Date')
-        self.option = ctk.StringVar()
-        self.option.set('All-Time')
-        self.facilities = ('All', 'Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
-        self.facility = ctk.StringVar()
-        self.facility.set('All')
-        self.days = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
-        self.day = ctk.StringVar()
-        ctk.CTkComboBox(self, variable = self.option, values = self.options, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15), command = self.options_choice_bookings_per_facility_page).place(anchor = 'center', relx = 0.5, rely = 0.1)
-        ctk.CTkComboBox(self, variable = self.facility, values = self.facilities, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.5, rely = 0.2)
-        ctk.CTkComboBox(self, variable = self.status, values = self.statuses, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.5, rely = 0.3)
-        self.days_combobox = ctk.CTkComboBox(self, variable = self.day, values = self.days, state = 'disabled', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15))
-        self.days_combobox.place(anchor = 'center', relx = 0.5, rely = 0.4)
-        self.start_date_button = ctk.CTkButton(self, state = 'disabled', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Select Start Date", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.get_start_date)
-        self.start_date_button.place(anchor = 'center', relx = 0.5, rely = 0.5)
-        self.end_date_button = ctk.CTkButton(self, state = 'disabled', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Select End Date", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.get_end_date)
-        self.end_date_button.place(anchor = 'center', relx = 0.5, rely = 0.6)
-        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Generate', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.bookings_per_facility_func).place(anchor = 'center', relx = 0.5, rely = 0.7)
         
 #Reset Content Frame
     def clear_frame(self):
@@ -941,13 +921,17 @@ class LoginPage(ctk.CTkFrame):
         login_frame.place(anchor = 'center', relx = 0.5, rely = 0.5)
 
         #Widgets
+        hide_button = ctk.CTkImage(light_image = Image.open("Images/hide.png"), size = (22,22))
+        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', width = 10, border_width = 2, text = '', image = hide_button, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.password_hide).place(anchor = 'center', relx = 0.74, rely = 0.58)
+
         ctk.CTkLabel(login_frame, text = 'User Login', font = ('Impact', 70)).place(anchor = 'center', relx = 0.5, rely = 0.25)
         ctk.CTkLabel(login_frame, text = '', image = id_icon).place(anchor = 'center', relx = 0.33, rely = 0.4)
         ctk.CTkLabel(login_frame, text = 'User ID', font = ('Impact', 20)).place(anchor = 'center', relx = 0.42, rely = 0.4)
         ctk.CTkEntry(login_frame, textvariable = self.id_entry, width = 200, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.5, rely = 0.45)
         ctk.CTkLabel(login_frame, text = '', image = password_icon).place(anchor = 'center', relx = 0.33, rely = 0.525)
         ctk.CTkLabel(login_frame, text = 'Password', font = ('Impact', 20)).place(anchor = 'center', relx = 0.44, rely = 0.53)
-        ctk.CTkEntry(login_frame, textvariable = self.password_entry, show = '*', width = 200, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.5, rely = 0.58)
+        self.password = ctk.CTkEntry(login_frame, textvariable = self.password_entry, show = '*', width = 200, border_color = 'black', border_width = 2, corner_radius = 0)
+        self.password.place(anchor = 'center', relx = 0.5, rely = 0.58)
         ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Login', text_color = 'black', fg_color = 'white', font = ('Impact', 25), command = self.login_func).place(anchor = 'center', relx = 0.5, rely = 0.7)
         ctk.CTkLabel(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.77)
         ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Don't have an account? Register Here", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: RegisterPage(window_frame)).place(anchor = 'center', relx = 0.5, rely = 0.84)
@@ -976,6 +960,12 @@ class LoginPage(ctk.CTkFrame):
         if hashed_password == self.user_db[0][4]: return True
         else: return False
 
+    def password_hide(self):
+        if self.password.cget('show') == '*':
+            self.password.configure(show = '')
+        else:
+            self.password.configure(show = '*')
+
     def logout_func(self):
         messagebox.showinfo('Logout Successful', f'Goodbye, {self.user_db[0][2]} {self.user_db[0][3]}')
         remove_widgets_login_register()
@@ -995,18 +985,35 @@ class RegisterPage(ctk.CTkFrame):
         login_frame = ctk.CTkFrame(window_frame, width = 500, height = 500, border_color = "black", fg_color = '#F0F0F0', border_width = 2, corner_radius = 0)
         login_frame.place(anchor = 'center', relx = 0.5, rely = 0.5)
 
+        hide_button = ctk.CTkImage(light_image = Image.open("Images/hide.png"), size = (22,22))
         #Widgets
         ctk.CTkLabel(login_frame, text = 'Set New Password', font = ('Impact', 60)).place(anchor = 'center', relx = 0.5, rely = 0.17)
         ctk.CTkLabel(login_frame, text = 'User ID', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.3)
         ctk.CTkEntry(login_frame, textvariable = self.id_entry, width = 190, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.5, rely = 0.35)
         ctk.CTkLabel(login_frame, text = 'Password', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.45)
-        ctk.CTkEntry(login_frame, textvariable = self.password_entry, width = 190, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.5, rely = 0.5)
+        self.password = ctk.CTkEntry(login_frame, textvariable = self.password_entry, width = 190, border_color = 'black', border_width = 2, corner_radius = 0)
+        self.password.place(anchor = 'center', relx = 0.5, rely = 0.5)
         ctk.CTkLabel(login_frame, text = 'Confirm Password', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.6)
-        ctk.CTkEntry(login_frame, textvariable = self.confirm_password_entry, width = 190, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.5, rely = 0.65)
+        self.confirm_password = ctk.CTkEntry(login_frame, textvariable = self.confirm_password_entry, width = 190, border_color = 'black', border_width = 2, corner_radius = 0)
+        self.confirm_password.place(anchor = 'center', relx = 0.5, rely = 0.65)
 
-        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Set", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.register_new_password_func).place(anchor = 'center', relx = 0.5, rely = 0.79)
+        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', width = 10, border_width = 2, text = '', image = hide_button, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.password_hide).place(anchor = 'center', relx = 0.73, rely = 0.5)
+        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', width = 10, border_width = 2, text = '', image = hide_button, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.confirm_password_hide).place(anchor = 'center', relx = 0.73, rely = 0.65)
+        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Set New Password', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.confirm_password_hide).place(anchor = 'center', relx = 0.5, rely = 0.79)
         ctk.CTkLabel(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.86)
         ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Go to Login", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: LoginPage(window_frame)).place(anchor = 'center', relx = 0.5, rely = 0.93)
+
+    def password_hide(self):
+        if self.password.cget('show') == '*':
+            self.password.configure(show = '')
+        else:
+            self.password.configure(show = '*')
+
+    def confirm_password_hide(self):
+        if self.confirm_password.cget('show') == '*':
+            self.confirm_password.configure(show = '')
+        else:
+            self.confirm_password.configure(show = '*')
 
     def register_new_password_func(self):
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
