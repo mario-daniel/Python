@@ -215,11 +215,16 @@ class Records(ctk.CTkFrame):
                 self.records.remove(record)
                 del record
 
+#A class which inherits a frame from the customtkinter module
 class ContentFrame(ctk.CTkFrame):
+    #A constructor method which defines itself, where the frame will be sitting on top off and the details of the user and their card.
     def __init__(self, parent, user, card):
+        #A super constructor method which defines the frame's attributes from which this class inherits from.
         super().__init__(parent, width = 650, height = 550, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
+        #Defining the user and card to allow use in the whole class.
         self.user = user
         self.card = card
+        #A label indicating the user with a welcome message
         ctk.CTkLabel(self, text = 'Welcome!', font = ('Impact', 140)).place(anchor = 'center', relx = 0.5, rely = 0.5)
 
 #Account Edit
@@ -283,30 +288,6 @@ class ContentFrame(ctk.CTkFrame):
         salted_password = self.password_entry.get().encode('utf-8') + salt
         hashed_password = hashlib.sha256(salted_password).hexdigest()
         return hashed_password, salt
-
-#Facility Support
-    def facility_support(self):
-        self.clear_frame()
-        #Variables
-        self.problem = ctk.StringVar()
-        self.facility = ctk.StringVar()
-        self.other_bool = ctk.BooleanVar()
-        self.problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard']
-        self.facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
-
-        #Widgets
-        ctk.CTkLabel(self, text = 'Facility Support', font = ('Impact', 90)).place(anchor = 'center', relx = 0.5, rely = 0.15)
-        ctk.CTkLabel(self, text = 'Choose Facility', font = ('Impact', 40)).place(anchor = 'center', relx = 0.3, rely = 0.35)
-        ctk.CTkComboBox(self, state = 'readonly', border_color = 'black', button_color = 'black', variable = self.facility, values = self.facilities, width = 250, dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.7, rely = 0.35)
-        ctk.CTkLabel(self, text = 'Choose Problem', font = ('Impact', 37)).place(anchor = 'center', relx = 0.3, rely = 0.5)
-        self.problem_combobox = ctk.CTkComboBox(self, state = 'readonly', border_color = 'black', button_color = 'black', width = 250, dropdown_font = ('Impact', 15), variable = self.problem, values = self.problems)
-        self.problem_combobox.place(anchor = 'center', relx = 0.7, rely = 0.5)
-        self.other_button = ctk.CTkSwitch(self, text = 'Other', command = self.other, variable = self.other_bool, progress_color = theme_color, button_color = 'black')
-        self.other_button.place(anchor = 'center', relx = 0.5, rely = 0.6)
-        self.other_texbox = ctk.CTkTextbox(self, state = 'disabled', width = 400, height = 100, border_color = 'black', border_width = 2)
-        self.other_texbox.place(anchor = 'n', relx = 0.5, rely = 0.65)
-        self.submit_button = ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', text = 'Submit', font = ('Impact', 20), command = self.request_problem)
-        self.submit_button.place(anchor = 'center', relx = 0.5, rely = 0.9)
 
     def other(self):
         if self.other_bool.get() == True:
@@ -888,9 +869,34 @@ class ContentFrame(ctk.CTkFrame):
             plt.show()
         else:
             messagebox.showinfo('No Results', 'There are no bookings of this configuration.')
-        
+
+#Facility Support
+    def facility_support(self):
+        self.clear_frame()
+        #Variables
+        self.problem = ctk.StringVar()
+        self.facility = ctk.StringVar()
+        self.other_bool = ctk.BooleanVar()
+        self.problems = ['Facility Damage', 'Facility Resources Empty', 'Theft of Facility Equipment', 'Health Hazard']
+        self.facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
+
+        #Widgets
+        ctk.CTkLabel(self, text = 'Facility Support', font = ('Impact', 90)).place(anchor = 'center', relx = 0.5, rely = 0.15)
+        ctk.CTkLabel(self, text = 'Choose Facility', font = ('Impact', 40)).place(anchor = 'center', relx = 0.3, rely = 0.35)
+        ctk.CTkComboBox(self, state = 'readonly', border_color = 'black', button_color = 'black', variable = self.facility, values = self.facilities, width = 250, dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.7, rely = 0.35)
+        ctk.CTkLabel(self, text = 'Choose Problem', font = ('Impact', 37)).place(anchor = 'center', relx = 0.3, rely = 0.5)
+        self.problem_combobox = ctk.CTkComboBox(self, state = 'readonly', border_color = 'black', button_color = 'black', width = 250, dropdown_font = ('Impact', 15), variable = self.problem, values = self.problems)
+        self.problem_combobox.place(anchor = 'center', relx = 0.7, rely = 0.5)
+        self.other_button = ctk.CTkSwitch(self, text = 'Other', command = self.other, variable = self.other_bool, progress_color = theme_color, button_color = 'black')
+        self.other_button.place(anchor = 'center', relx = 0.5, rely = 0.6)
+        self.other_texbox = ctk.CTkTextbox(self, state = 'disabled', width = 400, height = 100, border_color = 'black', border_width = 2)
+        self.other_texbox.place(anchor = 'n', relx = 0.5, rely = 0.65)
+        self.submit_button = ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', text = 'Submit', font = ('Impact', 20), command = self.request_problem)
+        self.submit_button.place(anchor = 'center', relx = 0.5, rely = 0.9)        
+
 #Reset Content Frame
     def clear_frame(self):
+        #This cycles through every widget in the content frame and destroys each widget.
         for widget in self.winfo_children():
             widget.destroy()
 
@@ -914,39 +920,43 @@ class SideBar(ctk.CTkFrame):
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approval Request', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approval_request).place(anchor = 'center', relx = 0.5, rely = 0.7)
         ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Logout', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = login.logout_func).place(anchor = 'center', relx = 0.5, rely = 0.93)
 
+#A class which inherits a frame from the customtkinter module
 class LoginPage(ctk.CTkFrame):
+    #A constructor method which defines itself, where the frame will be sitting on top off and the details of the user and their card.
     def __init__(self, parent, user = None, card = None):
-        #Page Initialisation
+        #A super constructor method which defines the frame's attributes from which this class inherits from.
         super().__init__(parent, width = 200, height = 600, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
         window.geometry('600x600')
         remove_widgets_login_register()
+        
         #Variables
         self.id_entry = ctk.StringVar()
         self.password_entry = ctk.StringVar()
         self.user = user
         self.card = card
+        #Image files loaded ready to be used.
         password_icon = ctk.CTkImage(light_image = Image.open("Images/padlock.png"), size = (22,22))
         id_icon = ctk.CTkImage(light_image = Image.open("Images/id.png"), size = (22,22))
+        hide_button = ctk.CTkImage(light_image = Image.open("Images/hide.png"), size = (22,22))
         
-        #Frames
+        #Login frame which sits on top of the window to add a boxy aesthetic look.
         login_frame = ctk.CTkFrame(window_frame, width = 500, height = 500, border_color = 'black', border_width = 2, fg_color = '#F0F0F0', corner_radius = 0)
         login_frame.place(anchor = 'center', relx = 0.5, rely = 0.5)
 
-        #Widgets
-        hide_button = ctk.CTkImage(light_image = Image.open("Images/hide.png"), size = (22,22))
-        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', width = 10, border_width = 2, text = '', image = hide_button, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.password_hide).place(anchor = 'center', relx = 0.74, rely = 0.58)
-
+        #Displayed Widgets
         ctk.CTkLabel(login_frame, text = 'User Login', font = ('Impact', 70)).place(anchor = 'center', relx = 0.5, rely = 0.25)
         ctk.CTkLabel(login_frame, text = '', image = id_icon).place(anchor = 'center', relx = 0.33, rely = 0.4)
         ctk.CTkLabel(login_frame, text = 'User ID', font = ('Impact', 20)).place(anchor = 'center', relx = 0.42, rely = 0.4)
         ctk.CTkEntry(login_frame, textvariable = self.id_entry, width = 200, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.5, rely = 0.45)
         ctk.CTkLabel(login_frame, text = '', image = password_icon).place(anchor = 'center', relx = 0.33, rely = 0.525)
         ctk.CTkLabel(login_frame, text = 'Password', font = ('Impact', 20)).place(anchor = 'center', relx = 0.44, rely = 0.53)
+        #An object for the password entry field was created as it will be used in another function later.
         self.password = ctk.CTkEntry(login_frame, textvariable = self.password_entry, show = '*', width = 200, border_color = 'black', border_width = 2, corner_radius = 0)
         self.password.place(anchor = 'center', relx = 0.5, rely = 0.58)
-        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Login', text_color = 'black', fg_color = 'white', font = ('Impact', 25), command = self.login_func).place(anchor = 'center', relx = 0.5, rely = 0.7)
+        ctk.CTkButton(login_frame, text = '', image = hide_button, hover_color = '#d4d4d4', border_color = 'black', width = 10, border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.password_hide).place(anchor = 'center', relx = 0.74, rely = 0.58)
+        ctk.CTkButton(login_frame, text = 'Login', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 25), command = self.login_func).place(anchor = 'center', relx = 0.5, rely = 0.7)
         ctk.CTkLabel(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.77)
-        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Don't have an account? Register Here", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: RegisterPage(window_frame)).place(anchor = 'center', relx = 0.5, rely = 0.84)
+        ctk.CTkButton(login_frame, text = "Don't have an account? Register Here", hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: RegisterPage(window_frame)).place(anchor = 'center', relx = 0.5, rely = 0.84)
 
     def login_func(self):
         self.user_db = cursor.execute('''SELECT * 
