@@ -1,19 +1,30 @@
+#Imports modules which are to be used in the system
+import smtplib, hashlib, secrets, re, sqlite3, mplcursors, customtkinter as ctk, matplotlib.pyplot as plt, matplotlib.dates as mdates
 from tkinter import messagebox
 from PIL import Image
 from datetime import datetime, timedelta
 from ttkbootstrap.dialogs import Querybox
-import smtplib, hashlib, secrets, re, sqlite3, mplcursors, customtkinter as ctk, matplotlib.pyplot as plt, matplotlib.dates as mdates
+from ttkbootstrap.dialogs.colorchooser import ColorChooserDialog
 
+#Connects to the database and creates a cursor
 conn = sqlite3.connect('rfid')
 cursor = conn.cursor()
 
 theme_color = '#ff7e75'
-window = ctk.CTk(fg_color = theme_color)
+#This uses customtkinter's CTk class to create a window.
+window = ctk.CTk()
+#Sets the title of the window
 window.title('RFID System')
+#Sets the geometry
 window.geometry('600x600')
+#Restricting the x and y geometry of the screen to not be resizable.
 window.resizable(False, False)
+#Creating a window frame that sits on top of the actual window to give the window a border and a theme colour to add style.
 window_frame = ctk.CTkFrame(window, fg_color = theme_color, corner_radius = 0, border_color = 'black', border_width = 2)
+#This places the frame on the window and expands and fills everything from corner to corner.
 window_frame.pack(expand = True, fill = 'both')
+#By default customtkinter uses dark mode and my program is going to be in light mode since it is used during school hours.
+#This sets the customtkiner appearance mode to light.
 ctk.set_appearance_mode('light')
 
 class User:
@@ -73,10 +84,10 @@ class Incoming_Approval_Segment(ctk.CTkFrame):
         close_button = ctk.CTkImage(light_image = Image.open("Images/close.png"), size = (22,22))
         check_button = ctk.CTkImage(light_image = Image.open("Images/check.png"), size = (22,22))
         ctk.CTkButton(self, text = self.booking[11], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover_color = '#d4d4d4', corner_radius = 0, command = self.open_toplevel).grid(row = 0, column = 0)
-        ctk.CTkButton(self, text = self.booking[1], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 1)
+        ctk.CTkButton(self, text = self.booking[1], width = 150, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 1)
         ctk.CTkButton(self, text = self.booking[2], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 2)
         ctk.CTkButton(self, text = self.booking[3], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 3)
-        ctk.CTkButton(self, text = self.booking[4], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 4)
+        ctk.CTkButton(self, text = self.booking[4], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 4)
         ctk.CTkButton(self, text = self.booking[5], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 5)
         ctk.CTkButton(self, text = '', image = check_button, width = 10, hover_color = '#F0F0F0', fg_color = '#d4d4d4', bg_color = '#d4d4d4', command = self.accept_booking).grid(row = 0, column = 8)
         ctk.CTkButton(self, text = '', image = close_button, width = 10, hover_color = '#F0F0F0', fg_color = '#d4d4d4', bg_color = '#d4d4d4', command = self.decline_booking).grid(row = 0, column = 9)
@@ -245,7 +256,8 @@ class ContentFrame(ctk.CTkFrame):
         ctk.CTkEntry(self, textvariable = self.password_entry, width = 190, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.8, rely = 0.43)
         ctk.CTkLabel(self, text = 'Confirm Password', font = ('Impact', 20)).place(anchor = 'center', relx = 0.8, rely = 0.58)
         ctk.CTkEntry(self, textvariable = self.confirm_password_entry, width = 190, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.8, rely = 0.63)
-        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', text = 'Update', font = ('Impact', 20), command = self.account_edit_func).place(anchor = 'center', relx = 0.8, rely = 0.78)        
+        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', text = 'Update', font = ('Impact', 20), command = self.account_edit_func).place(anchor = 'center', relx = 0.8, rely = 0.78)    
+        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', text = 'Update', font = ('Impact', 20), command = lambda: get_theme_color()).place(anchor = 'center', relx = 0.8, rely = 0.9)        
 
     def account_edit_func(self):
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
@@ -265,7 +277,7 @@ class ContentFrame(ctk.CTkFrame):
             conn.commit()
             self.password_entry.set('')
             self.confirm_password_entry.set('')
-    
+
     def password_hash(self):
         salt = secrets.token_bytes(16)
         salted_password = self.password_entry.get().encode('utf-8') + salt
@@ -460,13 +472,13 @@ class ContentFrame(ctk.CTkFrame):
                     approval_object = Incoming_Approval_Segment(incoming_approval_object_frame, incoming_approval_objects, booking, self.card)
                     incoming_approval_objects.append(approval_object)
                 title_font = ctk.CTkFont(family = 'Impact', size = 18, underline = True)
-                ctk.CTkLabel(self, text = 'Incoming Approvals', font = ('Impact', 90)).place(anchor = 'center', relx = 0.5, rely = 0.15)
-                ctk.CTkLabel(self, text = 'Facility', font = title_font).place(anchor = 'center', relx = 0.085, rely = 0.33)
-                ctk.CTkLabel(self, text = 'Start Time', font = title_font).place(anchor = 'center', relx = 0.24, rely = 0.33)
-                ctk.CTkLabel(self, text = 'End Time', font = title_font).place(anchor = 'center', relx = 0.39, rely = 0.33)
-                ctk.CTkLabel(self, text = 'Day', font = title_font).place(anchor = 'center', relx = 0.545, rely = 0.33)
-                ctk.CTkLabel(self, text = 'Date', font = title_font).place(anchor = 'center', relx = 0.695, rely = 0.33)
-                ctk.CTkLabel(self, text = 'Status', font = title_font).place(anchor = 'center', relx = 0.855, rely = 0.33)
+                ctk.CTkLabel(self, text = 'Incoming Approvals', font = ('Impact', 70)).place(anchor = 'center', relx = 0.5, rely = 0.15)
+                ctk.CTkLabel(self, text = 'User ID', font = title_font).place(anchor = 'center', relx = 0.08, rely = 0.33)
+                ctk.CTkLabel(self, text = 'Facility', font = title_font).place(anchor = 'center', relx = 0.24, rely = 0.33)
+                ctk.CTkLabel(self, text = 'Start Time', font = title_font).place(anchor = 'center', relx = 0.4, rely = 0.33)
+                ctk.CTkLabel(self, text = 'End Time', font = title_font).place(anchor = 'center', relx = 0.54, rely = 0.33)
+                ctk.CTkLabel(self, text = 'Day', font = title_font).place(anchor = 'center', relx = 0.65, rely = 0.33)
+                ctk.CTkLabel(self, text = 'Date', font = title_font).place(anchor = 'center', relx = 0.78, rely = 0.33)
             else:
                 ctk.CTkLabel(self, text = 'There are no incoming requests', font = ('Impact', 45)).place(anchor = 'center', relx = 0.5, rely = 0.5)   
         else:
@@ -615,7 +627,7 @@ class ContentFrame(ctk.CTkFrame):
         self.clear_frame()
         ctk.CTkLabel(self, text = 'Analytics', font = ('Impact', 75)).place(anchor = 'center', relx = 0.5, rely = 0.15)
         ctk.CTkButton(self, text = 'Bookings per facility', width = 200, height = 200, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.bookings_per_facility_page).place(anchor = 'e', relx = 0.45, rely = 0.5)
-        ctk.CTkButton(self, text = 'Booking trends over time', width = 200, height = 200, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.booking_trends_over_time_page).place(anchor = 'w', relx = 0.55, rely = 0.5)
+        ctk.CTkButton(self, text = 'Booking trends\nover time', width = 200, height = 200, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.booking_trends_over_time_page).place(anchor = 'w', relx = 0.55, rely = 0.5)
 
     def bookings_per_facility_page(self):
         self.clear_frame()
@@ -999,7 +1011,7 @@ class RegisterPage(ctk.CTkFrame):
 
         ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', width = 10, border_width = 2, text = '', image = hide_button, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.password_hide).place(anchor = 'center', relx = 0.73, rely = 0.5)
         ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', width = 10, border_width = 2, text = '', image = hide_button, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.confirm_password_hide).place(anchor = 'center', relx = 0.73, rely = 0.65)
-        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Set New Password', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.confirm_password_hide).place(anchor = 'center', relx = 0.5, rely = 0.79)
+        ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Set New Password', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.register_new_password_func).place(anchor = 'center', relx = 0.5, rely = 0.79)
         ctk.CTkLabel(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.86)
         ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Go to Login", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: LoginPage(window_frame)).place(anchor = 'center', relx = 0.5, rely = 0.93)
 
@@ -1017,7 +1029,7 @@ class RegisterPage(ctk.CTkFrame):
 
     def register_new_password_func(self):
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
-        login_count = cursor.execute('''SELECT login_count 
+        login_count = cursor.execute('''SELECT login_count
                                     FROM User 
                                     WHERE user_id = ?;''', 
                                     (self.id_entry.get(),)).fetchall()
@@ -1052,9 +1064,16 @@ class RegisterPage(ctk.CTkFrame):
         return hashed_password, salt
 
 def remove_widgets_login_register():
-    #Removes every widget on the page by cyclying through them and destroying them
+    #Removes every widget on the page by cyclying through them and destroying them.
     for widget in window_frame.winfo_children():
         widget.destroy()
+
+def get_theme_color():
+    color_picker = ColorChooserDialog()
+    color_picker.show()
+    color = color_picker.result
+    theme_color = color.hex
+    window.mainloop()
 
 def email(subject, body):
     with smtplib.SMTP('smtp.gmail.com', 587) as smtp:
@@ -1062,17 +1081,28 @@ def email(subject, body):
         smtp.login('3465@ascsdubai.ae', 'Mario@School24')
         smtp.sendmail('3465@ascsdubai.ae', 'skatedany26@gmail.com', f'Subject: {subject}\n\n{body}')
 
+#This is a standard function to check whether a login object was created or not and shows the main menu screen or the login screen respectively. 
 def main(login = None):
     if login != None:
+        #Calls the remove_widgets_login_register() function.
         remove_widgets_login_register()
+        #Sets the geometry of the screen to a larger size.
         window.geometry('900x600')
+        #Creates an object through the ContentFrame class called page.
         page = ContentFrame(window_frame, login.user, login.card)
+        #Creates an object through the SideBar class called sidebar.
         sidebar = SideBar(window_frame, login, page)
+        #Places the top left of the sidebar object at top left of the screen.
         sidebar.place(anchor = 'nw', relx = 0, rely = 0)
+        #Places the center of the page object slightly off centered to the right.
         page.place(anchor = 'center', relx = 0.61, rely = 0.5)
     else:
+        #Creates an object through the LoginPage class.
         login = LoginPage(window_frame)
 
+#This is a constructor which checks if this program is being run as the main file.
 if __name__ == '__main__':
+    #Calls the main() function
     main(login = None)
+    #Calls the windows mainloop method to prevent the window from closing
     window.mainloop()
