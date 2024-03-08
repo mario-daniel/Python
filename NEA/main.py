@@ -934,6 +934,7 @@ class LoginPage(ctk.CTkFrame):
         self.password_entry = ctk.StringVar()
         self.user = user
         self.card = card
+
         #Image files loaded ready to be used.
         password_icon = ctk.CTkImage(light_image = Image.open("Images/padlock.png"), size = (22,22))
         id_icon = ctk.CTkImage(light_image = Image.open("Images/id.png"), size = (22,22))
@@ -950,7 +951,7 @@ class LoginPage(ctk.CTkFrame):
         ctk.CTkEntry(login_frame, textvariable = self.id_entry, width = 200, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.5, rely = 0.45)
         ctk.CTkLabel(login_frame, text = '', image = password_icon).place(anchor = 'center', relx = 0.33, rely = 0.525)
         ctk.CTkLabel(login_frame, text = 'Password', font = ('Impact', 20)).place(anchor = 'center', relx = 0.44, rely = 0.53)
-        #An object for the password entry field was created as it will be used in another function later.
+        #An object for the password entry field is created as it will be used in another function later.
         self.password = ctk.CTkEntry(login_frame, textvariable = self.password_entry, show = '*', width = 200, border_color = 'black', border_width = 2, corner_radius = 0)
         self.password.place(anchor = 'center', relx = 0.5, rely = 0.58)
         ctk.CTkButton(login_frame, text = '', image = hide_button, hover_color = '#d4d4d4', border_color = 'black', width = 10, border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.password_hide).place(anchor = 'center', relx = 0.74, rely = 0.58)
@@ -995,24 +996,30 @@ class LoginPage(ctk.CTkFrame):
         main(login = None)
 
 class RegisterPage(ctk.CTkFrame):
+    #A constructor method which defines itself, where the frame will be sitting on top off.
     def __init__(self, parent):
+        #A super constructor method which defines the frame's attributes from which this class inherits from.
         super().__init__(parent, width = 200, height = 600, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')    
         remove_widgets_login_register()
+
         #Variables
         self.id_entry = ctk.StringVar()
         self.password_entry = ctk.StringVar()
         self.confirm_password_entry = ctk.StringVar()
+        
+        #Image files loaded ready to be used.
+        hide_button = ctk.CTkImage(light_image = Image.open("Images/hide.png"), size = (22,22))
 
-        #Frames
+        #Login frame which sits on top of the window to add a boxy aesthetic look.
         login_frame = ctk.CTkFrame(window_frame, width = 500, height = 500, border_color = "black", fg_color = '#F0F0F0', border_width = 2, corner_radius = 0)
         login_frame.place(anchor = 'center', relx = 0.5, rely = 0.5)
 
-        hide_button = ctk.CTkImage(light_image = Image.open("Images/hide.png"), size = (22,22))
         #Widgets
         ctk.CTkLabel(login_frame, text = 'Set New Password', font = ('Impact', 60)).place(anchor = 'center', relx = 0.5, rely = 0.17)
         ctk.CTkLabel(login_frame, text = 'User ID', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.3)
         ctk.CTkEntry(login_frame, textvariable = self.id_entry, width = 190, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.5, rely = 0.35)
         ctk.CTkLabel(login_frame, text = 'Password', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.45)
+        #An object for the password and confirm password entry field is created as it will be used in another function later.
         self.password = ctk.CTkEntry(login_frame, textvariable = self.password_entry, width = 190, border_color = 'black', border_width = 2, corner_radius = 0)
         self.password.place(anchor = 'center', relx = 0.5, rely = 0.5)
         ctk.CTkLabel(login_frame, text = 'Confirm Password', font = ('Impact', 20)).place(anchor = 'center', relx = 0.5, rely = 0.6)
@@ -1025,6 +1032,7 @@ class RegisterPage(ctk.CTkFrame):
         ctk.CTkLabel(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.86)
         ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Go to Login", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: LoginPage(window_frame)).place(anchor = 'center', relx = 0.5, rely = 0.93)
 
+    #A method which hides and unhides the password depending if the user clicks a button.
     def password_hide(self):
         if self.password.cget('show') == '*':
             self.password.configure(show = '')
@@ -1037,32 +1045,45 @@ class RegisterPage(ctk.CTkFrame):
         else:
             self.confirm_password.configure(show = '*')
 
+    #A method for the backend function of the register page.
     def register_new_password_func(self):
+        #This uses the 're' module to create a regular expression for the password checks.
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
+        #This retrieves the user's login count
         login_count = cursor.execute('''SELECT login_count
                                     FROM User 
                                     WHERE user_id = ?;''', 
                                     (self.id_entry.get(),)).fetchall()
+        #This checks if the user has logged in before or not.
         if login_count[0][0] == 0:
+            #This checks if all fiels are not empty and shows an appropriate error message.
             if self.id_entry.get() == '' or self.password_entry.get() == '' or self.confirm_password_entry.get() == '':
                 messagebox.showerror("Register Failed", "All fields must be filled out.")
+            #This checks if both the password and confirm password values the user inputed are the same and shows an appropriate error message.
             elif self.password_entry.get() != self.confirm_password_entry.get():
                 messagebox.showerror("Register Failed", "Please make sure the passwords are the same.")
+            #This checks the password inputed against the password checks and shows an appropriate error message.
             elif not re.match(pattern, self.password_entry.get()):
                 messagebox.showerror("Register Failed", "Password is not strong enough. Please include: 8 Characters minimum, A capital letter, A small letter, A number, A symbol.")
             elif re.match(pattern, self.password_entry.get()):
+                #This retrieves a hashed password from the user's input and a random salt from a function.
                 hashed_password, salt = self.password_hash()
+                #This retrieves the next available card which is not taken by a user.
                 card = cursor.execute('SELECT card_id FROM Card WHERE user_id IS NULL LIMIT 1;').fetchall()
+                #This updates the card record that was retrieved with the new user who owns it.
                 cursor.execute('''UPDATE Card 
                                SET user_id = ? 
                                WHERE card_id = ?;''', 
                                (self.id_entry.get(), card[0][0]))
+                #This stores the hashed password and salt that were created.
                 cursor.execute('''UPDATE User 
                                SET hashed_password = ?, salt = ?
                                WHERE user_id = ?;''', 
                                (hashed_password, salt, self.id_entry.get()))
+                #This shows an appropriate message to let the user know the password has been set successfully.
                 messagebox.showinfo('Password Successfully Set', 'Please login with the new password.')
                 conn.commit()
+                #Takes you back to the login page.
                 LoginPage(window_frame)
         else:
             messagebox.showerror("Password Set Failed", "Accounts password has already been changed please change from user settings.")
