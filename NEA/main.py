@@ -43,7 +43,7 @@ class Card:
         self.card_id = card_id
         self.tag_id = tag_id
 
-class Outgoing_Approval_Segment(ctk.CTkFrame):
+class OutgoingApprovalSegment(ctk.CTkFrame):
     def __init__(self, parent, booking, status, outgoing_approval_objects):
         super().__init__(master = parent, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
         self.booking = booking
@@ -72,49 +72,70 @@ class Outgoing_Approval_Segment(ctk.CTkFrame):
                 self.outgoing_approval_objects.remove(approval_object)
                 del approval_object
 
-class Incoming_Approval_Segment(ctk.CTkFrame):
+#A class which inherits a frame from the customtkinter module which is used multiple timings to replicate the same object with a few differences.
+class IncomingApprovalSegment(ctk.CTkFrame):
+    #A constructor method which defines itself, where the frame will be sitting on top off, the specific booking and it's corresponding object.
     def __init__(self, parent, incoming_approval_objects, booking, card):
+        #A super constructor method which defines the frame's attributes from which this class inherits from.
         super().__init__(master = parent)
         self.card = card
         self.incoming_approval_objects = incoming_approval_objects
         self.booking = booking
         self.toplevel_window = None
+        #Creating a 1 dimensional grid to display the request.
         self.rowconfigure(0, weight = 1)
         self.columnconfigure((0, 1, 2, 3, 4, 5), weight = 1)
+        #Images files are loaded for accepting or declining.
         close_button = ctk.CTkImage(light_image = Image.open("Images/close.png"), size = (22,22))
         check_button = ctk.CTkImage(light_image = Image.open("Images/check.png"), size = (22,22))
+        #Each widget is a value from the record.
         ctk.CTkButton(self, text = self.booking[11], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover_color = '#d4d4d4', corner_radius = 0, command = self.open_toplevel).grid(row = 0, column = 0)
-        ctk.CTkButton(self, text = self.booking[1], width = 150, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 1)
+        ctk.CTkButton(self, text = self.booking[1], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 1)
         ctk.CTkButton(self, text = self.booking[2], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 2)
         ctk.CTkButton(self, text = self.booking[3], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 3)
-        ctk.CTkButton(self, text = self.booking[4], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 4)
+        ctk.CTkButton(self, text = self.booking[4], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 4)
         ctk.CTkButton(self, text = self.booking[5], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 5)
         ctk.CTkButton(self, text = '', image = check_button, width = 10, hover_color = '#F0F0F0', fg_color = '#d4d4d4', bg_color = '#d4d4d4', command = self.accept_booking).grid(row = 0, column = 8)
         ctk.CTkButton(self, text = '', image = close_button, width = 10, hover_color = '#F0F0F0', fg_color = '#d4d4d4', bg_color = '#d4d4d4', command = self.decline_booking).grid(row = 0, column = 9)
         self.pack(pady = 10)
 
+    #A method which carries out the backend process of accepting a request.
     def accept_booking(self):
+        #These two line updates the record to set the status to True from the previous Null value in both the Booking and Timeslot table.
         cursor.execute('UPDATE Timeslot SET status = TRUE WHERE timeslot_id = ?', (self.booking[7],))
         cursor.execute('UPDATE Booking SET approved = TRUE WHERE booking_number = ?', (self.booking[0],))
         conn.commit()
+        #Calls the method.
         self.delete_approval_object()
 
+    #A method which carries out the backend process of declining a request.
     def decline_booking(self):
+        #These two line updates the record to set the status to False from the previous Null value in both the Booking and Timeslot table.
         cursor.execute('UPDATE Timeslot SET status = FALSE WHERE timeslot_id = ?', (self.card.card_id,))
         cursor.execute('UPDATE Booking SET approved = FALSE WHERE booking_number = ?', (self.booking[0],))
         conn.commit()
+        #Calls the method.
         self.delete_approval_object()
 
+    #A method which deletes the approval object and remove it from the bookings array.
     def delete_approval_object(self):
-        for approval_object in self.incoming_approval_objects: 
+        #Cycles through every object in the objects array.
+        for approval_object in self.incoming_approval_objects:
+            #Checks if the object has the same user id as the bookings user id.
             if approval_object.booking[0] == self.booking[0]:
+                #Cycles through every widget in the frame and destroys it.
                 for widget in approval_object.winfo_children():
                     widget.destroy()
+                #Removes the object from the object array.
                 self.incoming_approval_objects.remove(approval_object)
+                #Deletes the object entirely.
                 del approval_object 
 
+    #A method which creates a pop-up window.
     def open_toplevel(self):
+        #Checks if the pop up window exists or not.
         if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
+            #Creates the pop up window with the StudentProfile class.
             self.toplevel_window = StudentProfile(self.booking, self.card)
             self.toplevel_window.focus()
         else:
@@ -159,12 +180,19 @@ class Scheduled_Booking_Segment(ctk.CTkFrame):
         else:
             self.toplevel_window.focus()
 
+#A class which inherits a top level window from the customtkinter module which displays the students info to the teacher or admin.
 class StudentProfile(ctk.CTkToplevel):
+    #A constructor method which defines itself and takes in the booking information along with the card information of the user.
     def __init__(self, booking, card, *args, **kwargs):
+        #This allows the arguments to be passed on to this class and is able to be modified.
         super().__init__(*args, **kwargs)
+
+        #Basic Window setup.
         self.geometry("300x300")
         self.title('Student Info')
+        self.resizable(False, False)
 
+        #A window and info frame is created in order to match the aesthetics of the program.
         window_frame = ctk.CTkFrame(self, width = 300, height = 300, border_color = 'black', border_width = 2, fg_color = theme_color, corner_radius = 0)
         window_frame.place(anchor = 'center', relx = 0.5, rely = 0.5)
 
@@ -173,6 +201,7 @@ class StudentProfile(ctk.CTkToplevel):
         info_frame.rowconfigure(0, weight = 1)
         info_frame.columnconfigure((0, 1, 2, 3, 4), weight = 1)
 
+        #Widgets
         title_font = ctk.CTkFont(family = 'Impact', size = 18, underline = True)
         info_font = ctk.CTkFont(family = 'Impact', size = 18)
         ctk.CTkLabel(info_frame, text = 'User ID:', font = title_font).place(anchor = 'e', relx = 0.5, rely = 0.1)
@@ -314,8 +343,10 @@ class ContentFrame(ctk.CTkFrame):
             messagebox.showerror("Request Failed", "All fields must be filled out.")
 
 #Approval Request
+    #A method to display the widgets of the approval request page on the content frame.
     def approval_request(self):
         self.clear_frame()
+        
         #Variables
         self.facilities = ('Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
         self.days = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
@@ -334,44 +365,69 @@ class ContentFrame(ctk.CTkFrame):
         self.timings_available_combobox.place(anchor = 'center', relx = 0.7, rely = 0.65)
         ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', text = 'Request', font = ('Impact', 20), command = self.request).place(anchor = 'center', relx = 0.5, rely = 0.8)        
 
+    #This method displays the available timings in a combo box.
     def display_timings_available(self, event):
+        #An empty array to store the timings available to show the user.
         timings_available = []
+        #Retrieves the timings that are available on the database which aren't booked or pending depending on the student's selection: facility and day.
         timings = cursor.execute('''SELECT Timeslot.start_time, Timeslot.end_time 
-                                FROM Timeslot 
-                                JOIN Facility ON Facility.facility_id = Timeslot.facility_id 
-                                WHERE Timeslot.day = ? 
-                                    AND Facility.facility_name = ? 
-                                    AND Timeslot.status = 0;''' ,(self.day.get(), self.facility.get())).fetchall()
+                                FROM Timeslot, Facility
+                                WHERE Facility.facility_id = Timeslot.facility_id 
+                                AND Timeslot.day = ?
+                                AND Facility.facility_name = ?
+                                AND Timeslot.status = 0;''' ,(self.day.get(), self.facility.get())).fetchall()
+        #This appends the timings_available array with the timings retrieved from the database whilst also formatting them in a way which is more understandable for the user.
+        #Example: 07:40:00 is turned into 07:40
         for slot in timings:
             timings_available.append(f'{slot[0][:-3]} - {slot[1][:-3]}')
+        #This allows the combo box to be clickable.
         self.timings_available_combobox.configure(state = 'readonly')
+        #This updates the values avaiable in the combo box to the new timings available.
         self.timings_available_combobox.configure(values = timings_available)
 
-    def get_time(self):
+    #This method gets the date of the day the user requested since the database requires a date to be stored.
+    def get_date(self):
+        #Gets the timing in a string format.
         timing_format = self.timing.get()
+        #Cycles through every character in the string.
         for index in range(len(timing_format)):
+            #If the character is a '-' it uses that as the point in which to change the timing format.
             if timing_format[index] == '-':
+                #These lines change the format that was changed for the user's better understanding back into the form the database understands.
+                #Example: 07:40 is turned into 07:40:00
                 self.start_time = f'{timing_format[:index - 1].strip()}:00'
                 self.end_time = f'{timing_format[index + 1:].strip()}:00'
+        #Gets the day in a string format.
         day = self.day.get()
+        #Gets todays date as an object
         today = datetime.today()
         Day_num = {'Monday' : 0, 'Tuesday' : 1, 'Wednesday' : 2, 'Thursday' : 3, 'Friday' : 4}
+        #These lines retrieve how many days remain until the day of the booking and calculates the date based on today's date.
         days_delta = (Day_num[day] - today.weekday()) % 7
         self.date = (today + timedelta(days=days_delta)).strftime('%Y-%m-%d')
 
+    #This method sends the request on the database for the teacher or admin to view later on.
     def request(self):
-        self.get_time()
+        #The get_date method is called.
+        self.get_date()
+        #This retrieves the facility id of the corresponding facility picked by the user.
         facility_id_db = cursor.execute('SELECT facility_id FROM Facility WHERE facility_name = ?', (self.facility.get(), )).fetchall()
+        #This retrieves the timeslot the user has requested to book.
         self.timeslot_id_db = cursor.execute('SELECT timeslot_id FROM Timeslot WHERE day = ? AND facility_id = ? AND start_time = ? AND end_time = ?', (self.day.get(), facility_id_db[0][0], self.start_time, self.end_time)).fetchall()
+        #This creates the request on the database with setting the status to NULL which means pending.
         cursor.execute('INSERT INTO Booking (facility_id, user_id, timeslot_id, booking_date) VALUES (?, ?, ?, ?)', (facility_id_db[0][0], self.user.user_id, self.timeslot_id_db[0][0], self.date))
+        #This updates the status of the time slot to NULL also to indicate a pending request.
         cursor.execute('UPDATE Timeslot SET status = NULL WHERE timeslot_id = ?', (self.timeslot_id_db[0][0],))
         conn.commit()
+        #These lines reset the page for a new request.
         self.day.set('')
         self.timing.set('')
         self.timings_available_combobox.configure(state = 'disabled')
+        #This shows an appropriate message to the user about the info of their booking.
         messagebox.showinfo('Request Successful', f'Requested {self.facility.get()} from {self.start_time} to {self.end_time} on {self.day.get()} {self.date}')
 
 #Card Tap in
+    #A method which shows a combo box of facilities to tap in to and a button to do so.
     def card_tap_in_page(self):
         self.clear_frame()
         self.facility_choice = ctk.StringVar()
@@ -379,22 +435,29 @@ class ContentFrame(ctk.CTkFrame):
         ctk.CTkComboBox(self, values = self.facilities, variable = self.facility_choice).place(anchor = 'center', relx = 0.5, rely = 0.2)
         ctk.CTkButton(self, text = 'Tap In', command = self.card_tap_in_func).place(anchor = 'center', relx = 0.5, rely = 0.4) 
 
+    #A method which carries out the backend process of the card tap in into a facility.
     def card_tap_in_func(self):
+        #These lines get the current date and time and formats them into a string to be compared later.
         current_date_time = datetime.now()
         self.current_time = current_date_time.strftime('%H:%M:%S')
         self.current_date = current_date_time.strftime('%Y-%m-%d')
+        #This returns if the facility requires a booking or not.
         self.facility_booking_required = cursor.execute('''SELECT facility_id, booking_required 
                                                 FROM Facility
                                                 WHERE facility_name = ?''', (self.facility_choice.get(),)).fetchall()
+        #Checks if the user is a student, teacher or admin.
         if self.user.user_id[0] == 'A':
             self.access_granted()
         elif self.user.user_id[0] == 'T':
+            #Checks whether the teacher is entitled to the facility they are trying to tap in to or if the facility even requires a booking.
             if self.user.facility_id == self.facility_booking_required[0][0] or self.facility_booking_required[0][1] == 0:
                 self.access_granted()
             else:
                 self.access_denied()
-        elif self.user.user_id[0] == 'S':    
+        elif self.user.user_id[0] == 'S':
+            #Checks if the facility requires a booking to access.
             if self.facility_booking_required[0][1] == 1:
+                #Retrives the user's booking of the specific facility they are trying to access at the specific time they're trying to access and whether they have a booking or not.
                 booking_date_info = cursor.execute('''SELECT start_time, end_time, booking_date
                                                     FROM User, Booking, Timeslot
                                                     WHERE User.user_id = Booking.user_id
@@ -406,31 +469,40 @@ class ContentFrame(ctk.CTkFrame):
                                                     AND Timeslot.end_time >= ?
                                                     AND Booking.booking_date = ?''', 
                                                     (self.user.user_id, self.facility_booking_required[0][0], self.current_time, self.current_time, self.current_date)).fetchall()
+                #Checks whether a booking is returned or not and carries out the respective command.
                 if booking_date_info != []:
                     self.access_granted()
                 else:
                     self.access_denied()
-            elif self.facility_booking_required[0][1] == 0:
+            else:
                 self.access_granted()
         conn.commit()
 
+    #A method which carries out the backend process of swipe being granted into the facility.
     def access_granted(self):
+        #Inserts info about the current swipe that has just occurred into the database with the access_accepted value as True.
         cursor.execute('''INSERT INTO Swipe (card_id, facility_id, date, time, access_accepted)
                                         VALUES (?, ?, ?, ?, TRUE)''',
                                         (self.card.card_id, self.facility_booking_required[0][0], self.current_date, self.current_time))
+        #Shows an appropriate message to the user that their access has been granted.
         messagebox.showinfo('', 'Access Granted')
 
+    #A method which carries out the backend process of swipe being denied into the facility.
     def access_denied(self):
         cursor.execute('''INSERT INTO Swipe (card_id, facility_id, date, time, access_accepted)
                         VALUES (?, ?, ?, ?, FALSE)''',
                         (self.card.card_id, self.facility_booking_required[0][0], self.current_date, self.current_time))
         messagebox.showerror('', 'Access Denied')
 
-#Approvals
-    def approvals(self):
+#Approval Management
+    #A method which checks whether a student, teacher or admin is accessing the approvals page and shows them page for their appropriate role.
+    def approval_management(self):
         self.clear_frame()
+        #Checks whether a student, teacher or admin is logged in and using the system.
         if self.user.user_id[0] == 'A' or self.user.user_id[0] == 'T':
+            #Checks whether it's a teacher or admin accessing this page.
             if self.user.user_id[0] == 'A':
+                #Gets the requests from all facilites.
                 bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id, User.first_name, User.last_name, User.class_grade, User.user_id
                                             FROM Facility, Timeslot, Booking, User
                                             WHERE Booking.facility_id = Facility.facility_id
@@ -438,6 +510,7 @@ class ContentFrame(ctk.CTkFrame):
                                             AND Booking.timeslot_id = Timeslot.timeslot_id
                                             AND User.user_id = Booking.user_id;''').fetchall()
             elif self.user.user_id[0] == 'T':
+                #Gets the requests from the teacher's specific facility.
                 bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id, User.first_name, User.last_name, User.class_grade, User.user_id
                                             FROM Facility, Timeslot, Booking, User
                                             WHERE Booking.facility_id = Facility.facility_id
@@ -445,13 +518,20 @@ class ContentFrame(ctk.CTkFrame):
                                             AND Booking.facility_id = ?
                                             AND Booking.timeslot_id = Timeslot.timeslot_id
                                             AND User.user_id = Booking.user_id;''', (self.user.facility,)).fetchall()
+            #Checks whether there are requests and shows an appropriate message if there aren't.
             if bookings != []:
+                #A scrollable frame widget which allows for multiple requests to be shown and once on the screen.
                 incoming_approval_object_frame = ctk.CTkScrollableFrame(self, width = 620, height = 342, corner_radius = 0, border_color = 'black', border_width = 2) #fg_color = '#F0F0F0')
                 incoming_approval_object_frame.place(anchor = 'n', relx = 0.5, rely = 0.36)
+                #An array to carry all incoming requests objects that will be created.
                 incoming_approval_objects = []
+                #Goes through every request that had been retrieved from the database.
                 for booking in bookings:
-                    approval_object = Incoming_Approval_Segment(incoming_approval_object_frame, incoming_approval_objects, booking, self.card)
+                    #Creates an object using the IncomingApprovalSegment class.
+                    approval_object = IncomingApprovalSegment(incoming_approval_object_frame, incoming_approval_objects, booking, self.card)
+                    #Appends the object created to the previously created array.
                     incoming_approval_objects.append(approval_object)
+                #Widgets
                 title_font = ctk.CTkFont(family = 'Impact', size = 18, underline = True)
                 ctk.CTkLabel(self, text = 'Incoming Approvals', font = ('Impact', 70)).place(anchor = 'center', relx = 0.5, rely = 0.15)
                 ctk.CTkLabel(self, text = 'User ID', font = title_font).place(anchor = 'center', relx = 0.08, rely = 0.33)
@@ -463,21 +543,26 @@ class ContentFrame(ctk.CTkFrame):
             else:
                 ctk.CTkLabel(self, text = 'There are no incoming requests', font = ('Impact', 45)).place(anchor = 'center', relx = 0.5, rely = 0.5)   
         else:
+            #Gets the requests the student themselves have sent.
             bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id 
                                         FROM Facility, Timeslot, Booking 
                                         WHERE Facility.facility_id = Booking.facility_id
                                             AND Timeslot.timeslot_id = Booking.timeslot_id
                                             AND Booking.user_id = ?;''', (self.user.user_id,)).fetchall()
+            #The same format repeats except for some factors.
             if bookings != []:
                 outgoing_approval_object_frame = ctk.CTkScrollableFrame(self, width = 620, height = 342, corner_radius = 0, border_color = 'black', border_width = 2) #fg_color = '#F0F0F0')
                 outgoing_approval_object_frame.place(anchor = 'n', relx = 0.5, rely = 0.36)
                 outgoing_approval_objects = []
                 for booking in bookings:
+                    #Converts status on the database to one the user can understand.
                     if booking[6] == None: status = 'Pending'
                     elif booking[6] == 1: status = 'Approved'
                     else: status = 'Declined'
-                    approval_object = Outgoing_Approval_Segment(outgoing_approval_object_frame, booking, status, outgoing_approval_objects)
+                    #An outgoing approval object is created rather than an incoming one.
+                    approval_object = OutgoingApprovalSegment(outgoing_approval_object_frame, booking, status, outgoing_approval_objects)
                     outgoing_approval_objects.append(approval_object)
+                #Widgets
                 title_font = ctk.CTkFont(family = 'Impact', size = 18, underline = True)
                 ctk.CTkLabel(self, text = 'Sent Approvals', font = ('Impact', 90)).place(anchor = 'center', relx = 0.5, rely = 0.15)
                 ctk.CTkLabel(self, text = 'Facility', font = title_font).place(anchor = 'center', relx = 0.085, rely = 0.33)
@@ -909,14 +994,14 @@ class SideBar(ctk.CTkFrame):
         ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Analytics', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.analytics_page).place(anchor = 'center', relx = 0.5, rely = 0.6)
         if login.user.user_id[0] == 'A' or login.user.user_id[0] == 'T':
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Schedule Viewer', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.schedule_viewer).place(anchor = 'center', relx = 0.5, rely = 0.4)
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approvals).place(anchor = 'center', relx = 0.5, rely = 0.5)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approval_management).place(anchor = 'center', relx = 0.5, rely = 0.5)
             if login.user.user_id[0] == 'A':
                 ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'All Records', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.all_records_page).place(anchor = 'center', relx = 0.5, rely = 0.7)
             else:
                 ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Facility Records', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.all_records_page).place(anchor = 'center', relx = 0.5, rely = 0.7)
         else:
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Facility Support', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.facility_support).place(anchor = 'center', relx = 0.5, rely = 0.4)
-            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'View Sent Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approvals).place(anchor = 'center', relx = 0.5, rely = 0.5)
+            ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'View Sent Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approval_management).place(anchor = 'center', relx = 0.5, rely = 0.5)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approval Request', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approval_request).place(anchor = 'center', relx = 0.5, rely = 0.7)
         ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Logout', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = login.logout_func).place(anchor = 'center', relx = 0.5, rely = 0.93)
 
@@ -959,42 +1044,57 @@ class LoginPage(ctk.CTkFrame):
         ctk.CTkLabel(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.77)
         ctk.CTkButton(login_frame, text = "Don't have an account? Register Here", hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: RegisterPage(window_frame)).place(anchor = 'center', relx = 0.5, rely = 0.84)
 
+    #A method which creates a student and card object to login the user into the system.
     def login_func(self):
+        #Gets all the user's data from the database.
         self.user_db = cursor.execute('''SELECT * 
                                       FROM User 
                                       WHERE user_id = ?;''', 
                                       (self.id_entry.get(),)).fetchall()
+        #Checks if the user has an existing password or not and shows an appropriate message.
         if self.user_db[0][4] == None:
             messagebox.showerror('Login Failed', 'Please set a new password.')
+        #Checks if the password is correct.
         elif self.password_check():
+            #Gets the card assigned to the user from the database.
             self.card_db = cursor.execute('''SELECT card_id, tag_id 
                                        FROM Card 
                                        WHERE user_id = ?;''', 
                                        (self.user_db[0][0],)).fetchall()
+            #Creates two objects to store the values of the user and their card and shows an appropriate message welcoming the user.
             self.card, self.user = Card(self.card_db[0][0], self.card_db[0][1]), User(self.user_db[0][0], self.user_db[0][2], self.user_db[0][3], self.user_db[0][4], self.user_db[0][5], self.user_db[0][6], self.user_db[0][1], self.user_db[0][7])
             messagebox.showinfo('Login Successful', f'Welcome, {self.user_db[0][2]} {self.user_db[0][3]}')
+            #Goes back to the main function with login having a value rather than none.
             main(self)
         else:
             messagebox.showerror("Login Failed", "Incorrect username or password")
 
+    #A method to check if the password the user enter matches the constructed one from the database.
     def password_check(self):
+        #This combines the user's entry with the salt on the database.
         salted_password = self.password_entry.get().encode('utf-8') + self.user_db[0][5]
+        #This hashes the salted_password.
         hashed_password = hashlib.sha256(salted_password).hexdigest()
+        #This compares the password with the one on the database and returns True if it is.
         if hashed_password == self.user_db[0][4]: return True
         else: return False
 
+    #A method which hides and unhides the password depending if the user clicks a button.
     def password_hide(self):
         if self.password.cget('show') == '*':
             self.password.configure(show = '')
         else:
             self.password.configure(show = '*')
 
+    #This method deletes itself and takes the user back to the login screen.
     def logout_func(self):
         messagebox.showinfo('Logout Successful', f'Goodbye, {self.user_db[0][2]} {self.user_db[0][3]}')
         remove_widgets_login_register()
+        #Deletes itself
         del self
         main(login = None)
 
+#A class which inherits a frame from the customtkinter module
 class RegisterPage(ctk.CTkFrame):
     #A constructor method which defines itself, where the frame will be sitting on top off.
     def __init__(self, parent):
@@ -1032,8 +1132,9 @@ class RegisterPage(ctk.CTkFrame):
         ctk.CTkLabel(login_frame, text = 'or').place(anchor = 'center', relx = 0.5, rely = 0.86)
         ctk.CTkButton(login_frame, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Go to Login", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = lambda: LoginPage(window_frame)).place(anchor = 'center', relx = 0.5, rely = 0.93)
 
-    #A method which hides and unhides the password depending if the user clicks a button.
+    #Two methods which hides and unhides the password depending if the user clicks a button.
     def password_hide(self):
+        #If user presses on the button and it shows the password then it shows the password letters as '*' and vice versa
         if self.password.cget('show') == '*':
             self.password.configure(show = '')
         else:
@@ -1049,14 +1150,9 @@ class RegisterPage(ctk.CTkFrame):
     def register_new_password_func(self):
         #This uses the 're' module to create a regular expression for the password checks.
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
-        #This retrieves the user's login count
-        login_count = cursor.execute('''SELECT login_count
-                                    FROM User 
-                                    WHERE user_id = ?;''', 
-                                    (self.id_entry.get(),)).fetchall()
-        #This checks if the user has logged in before or not.
-        if login_count[0][0] == 0:
-            #This checks if all fiels are not empty and shows an appropriate error message.
+        #This checks if the user has logged in before or not by checking if they have a password.
+        if self.user_db[0][4] == None:
+            #This checks if all fields are not empty and shows an appropriate error message.
             if self.id_entry.get() == '' or self.password_entry.get() == '' or self.confirm_password_entry.get() == '':
                 messagebox.showerror("Register Failed", "All fields must be filled out.")
             #This checks if both the password and confirm password values the user inputed are the same and shows an appropriate error message.
@@ -1088,9 +1184,13 @@ class RegisterPage(ctk.CTkFrame):
         else:
             messagebox.showerror("Password Set Failed", "Accounts password has already been changed please change from user settings.")
     
+    #A function to hash passwords
     def password_hash(self):
+        #A random salt of 16 bytes is generated
         salt = secrets.token_bytes(16)
+        #The salted password is the user's password with the salt that was previously generated appended to the end.
         salted_password = self.password_entry.get().encode('utf-8') + salt
+        #The hashed password is the salted password put through a hashing algorithm and represented as a hexadecimal.
         hashed_password = hashlib.sha256(salted_password).hexdigest()
         return hashed_password, salt
 
