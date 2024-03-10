@@ -191,8 +191,11 @@ class ScheduledBookingSegment(ctk.CTkFrame):
                 #Deletes the object entirely.
                 del booking_object 
   
+    #A method which creates a pop-up window.
     def open_toplevel(self):
+        #Checks if the pop up window exists or not.
         if self.toplevel_window is None or not self.toplevel_window.winfo_exists():
+            #Creates the pop up window with the StudentProfile class.
             self.toplevel_window = StudentProfile(self.booking, self.card)
             self.toplevel_window.focus()
         else:
@@ -233,28 +236,40 @@ class StudentProfile(ctk.CTkToplevel):
         ctk.CTkLabel(info_frame, text = booking[9], font = info_font).place(anchor = 'w', relx = 0.53, rely = 0.7)
         ctk.CTkLabel(info_frame, text = booking[10], font = info_font).place(anchor = 'w', relx = 0.53, rely = 0.9)
 
+#A class which inherits a frame from the customtkinter module which uses multiple records to replicate the same object with a few differences.
 class Records(ctk.CTkFrame):
+    #A constructor method which defines itself, where the frame will be sitting on top off along with the record and its objects.
     def __init__(self, parent, user, record, records):
+        #A super constructor method which defines the frame's attributes from which this class inherits from.
         super().__init__(master = parent, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
         self.records = records
         self.user = user
         self.record = record
+        #Creating a 1 dimensional grid to display the booking.
         self.rowconfigure(0, weight = 1)
         self.columnconfigure((0, 1, 2, 3, 4, 5), weight = 1)
+        #Widgets
         ctk.CTkButton(self, text = self.record[0], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 0)
         ctk.CTkButton(self, text = self.record[1], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 1)
         ctk.CTkButton(self, text = self.record[2], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 2)
         ctk.CTkButton(self, text = self.record[3], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 3)
         ctk.CTkButton(self, text = self.record[4], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 4)
+        #Checks whether an admin is accessing the page and shows the remove button accordingly. 
         if self.user.user_id[0] == 'A':
             close_button = ctk.CTkImage(light_image = Image.open("Images/close.png"), size = (22,22))
             ctk.CTkButton(self, text = '', image = close_button, width = 10, hover_color = '#F0F0F0', fg_color = '#d4d4d4', bg_color = '#d4d4d4', command = self.remove_record).grid(row = 0, column = 8)
         self.pack(pady = 10)
     
     def remove_record(self):
+        #Resets the card the user had, ready for the next user to come and register.
         cursor.execute('UPDATE CARD SET user_id = NULL WHERE user_id = ?', (self.record[0],))
+        #Deletes the record off the database.
         cursor.execute('DELETE FROM User WHERE user_id = ?', (self.booking[0],))
         conn.commit()
+        self.remove_record_objects()
+
+    #A method to remove the object from the associates array and delete its object.
+    def remove_record_objects(self):
         for record in self.records: 
             if record.record[0] == self.records[0]:
                 for widget in record.winfo_children():
@@ -274,14 +289,17 @@ class ContentFrame(ctk.CTkFrame):
         #A label indicating the user with a welcome message
         ctk.CTkLabel(self, text = 'Welcome!', font = ('Impact', 140)).place(anchor = 'center', relx = 0.5, rely = 0.5)
 
-#Account Edit
+#Account Info View and Password Change
+    #A method to display the user's information and edit their password.
     def account_edit_page(self):
         self.clear_frame()
+        #Variables
         self.password_entry = ctk.StringVar()
         self.confirm_password_entry = ctk.StringVar()
         heading_font = ctk.CTkFont(family = 'Impact', size = 75, underline = True)
         title_font = ctk.CTkFont(family = 'Impact', size = 40, underline = True)
         info_font = ctk.CTkFont(family = 'Impact', size = 40)
+        #Widgets
         ctk.CTkLabel(self, text = 'Profile', font = heading_font).place(anchor = 'center', relx = 0.5, rely = 0.15)
         ctk.CTkLabel(self, text = 'First Name:', font = title_font).place(anchor = 'center', relx = 0.2, rely = 0.33)
         ctk.CTkLabel(self, text = self.user.first_name, font = info_font).place(anchor = 'center', relx = 0.5, rely = 0.33)
@@ -311,6 +329,7 @@ class ContentFrame(ctk.CTkFrame):
         ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', text = 'Update', font = ('Impact', 20), command = self.account_edit_func).place(anchor = 'center', relx = 0.8, rely = 0.78)    
         ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', text = 'Update', font = ('Impact', 20), command = lambda: get_theme_color()).place(anchor = 'center', relx = 0.8, rely = 0.9)        
 
+    #A method to carry out the backend process of changing the password for the user.
     def account_edit_func(self):
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
         if self.password_entry.get() == '' or self.confirm_password_entry.get() == '':
@@ -330,6 +349,7 @@ class ContentFrame(ctk.CTkFrame):
             self.password_entry.set('')
             self.confirm_password_entry.set('')
 
+    #A function to hash the password the user inputted.
     def password_hash(self):
         salt = secrets.token_bytes(16)
         salted_password = self.password_entry.get().encode('utf-8') + salt
@@ -639,48 +659,58 @@ class ContentFrame(ctk.CTkFrame):
         else:
             ctk.CTkLabel(self, text = 'Empty Schedule', font = ('Impact', 50)).place(anchor = 'center', relx = 0.5, rely = 0.5)
 
-#Record Viewer   
+#Record Viewer
+    #A method which displays the visual part of the records page.
     def all_records_page(self):
+        self.clear_frame()
+        #Variables
         self.selection_occupation = ctk.StringVar()
         self.selection_facility = ctk.StringVar()
-        self.all_records()
-
-    def all_records(self):
-        self.clear_frame()
+        self.selection_occupation.set('All')
+        self.selection_facility.set('All')
         self.occupations = ('All', 'Teachers', 'Students')
         self.facilities = ('All', 'Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
+        #Widgets
         heading_font = ctk.CTkFont(family = 'Impact', size = 90, underline = True)
         ctk.CTkLabel(self, text = 'Records', font = heading_font).place(anchor = 'center', relx = 0.34, rely = 0.18)
         ctk.CTkComboBox(self, variable = self.selection_occupation, values = self.occupations, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.8, rely = 0.08)
         self.facility_combobox = ctk.CTkComboBox(self, variable = self.selection_facility, values = self.facilities, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15))
         self.facility_combobox.place(anchor = 'center', relx = 0.8, rely = 0.18)
-        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', text = 'Search', font = ('Impact', 20), command = self.all_records).place(anchor = 'center', relx = 0.8, rely = 0.28)
+        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', text = 'Search', font = ('Impact', 20), command = self.all_records_func).place(anchor = 'center', relx = 0.8, rely = 0.28)
+        self.all_records_func()
+
+    #A method to carry out the backend processes of retrieving values from the database to show them to the user in a presentable way.
+    def all_records_func(self):
+        #Checks whether a teacher or admin is accessing this page.
         if self.user.user_id[0] == 'A':
-            if self.selection_occupation.get() == '':
-                self.selection_occupation.set('All')
-                self.selection_facility.set('All')
+            #Checks whether a filter is applied or not.
             if self.selection_occupation.get() == 'All':
-                    self.facility_combobox.configure(state = 'disabled')    
+                    self.facility_combobox.configure(state = 'disabled')
+                    #Retrieves all the teacher records. 
                     teacher_records = cursor.execute('''SELECT User.user_id, facility_name, first_name, last_name, card_id
                                             FROM User, Card, Facility
                                             WHERE User.user_id = Card.user_id
                                             AND User.user_id <> 'A'
                                             AND Facility.facility_id = User.facility_id;''').fetchall()
+                    #Retrieves all the student records.
                     student_records = cursor.execute('''SELECT User.user_id, class_grade, first_name, last_name, card_id
                                             FROM User, Card
                                             WHERE User.user_id = Card.user_id
                                             AND User.user_id <> 'A'
                                             AND User.facility_id IS NULL''').fetchall()
+                    #Combines them into all records.
                     records = teacher_records + student_records
             elif self.selection_occupation.get() == 'Teachers':
                 self.facility_combobox.configure(state = 'readonly')    
                 if self.selection_facility.get() == 'All':
+                    #Retrieves all teachers.
                     records = cursor.execute('''SELECT User.user_id, facility_name, first_name, last_name, card_id
                                             FROM User, Card, Facility
                                             WHERE User.user_id = Card.user_id
                                             AND User.user_id <> 'A'
                                             AND Facility.facility_id = User.facility_id;''').fetchall()
                 else:
+                    #Retrieves all teachers responsible for a specific facility.
                     records = cursor.execute('''SELECT User.user_id, facility_name, first_name, last_name, card_id
                                             FROM User, Card, Facility
                                             WHERE User.user_id = Card.user_id
@@ -688,19 +718,22 @@ class ContentFrame(ctk.CTkFrame):
                                             AND Facility.facility_id = User.facility_id
                                             AND Facility.facility_name = ?;''', (self.selection_facility.get(),)).fetchall()
             elif self.selection_occupation.get() == 'Students':
-                self.facility_combobox.configure(state = 'disabled')    
+                self.facility_combobox.configure(state = 'disabled')
+                #Retrieves all students.  
                 records = cursor.execute('''SELECT User.user_id, class_grade, first_name, last_name, card_id
                                             FROM User, Card
                                             WHERE User.user_id = Card.user_id
                                             AND User.user_id <> 'A'
                                             AND User.facility_id IS NULL''').fetchall()
         elif self.user.user_id[0] == 'T':
+            #Retrieves all students for the facility the teacher is entitled to.
             records = cursor.execute('''SELECT User.user_id, class_grade, first_name, last_name, card_id
                                     FROM User, Card, Facility
                                     WHERE User.user_id = Card.user_id
                                     AND User.user_id <> 'A'
                                     AND User.facility_id IS NULL
                                     AND Facility.facility_id = ?;''', (self.user.facility_id,)).fetchall()
+        #Checks whether there are any records and shows the appropriate widgets.
         if records != []:
             record_objects = []
             records_frame = ctk.CTkScrollableFrame(self, width = 620, height = 330, corner_radius = 0, border_color = 'black', border_width = 2)
@@ -708,6 +741,7 @@ class ContentFrame(ctk.CTkFrame):
             for record in records:
                 record_obj = Records(records_frame, self.user, record, record_objects)
                 record_objects.append(record_obj)    
+            #Widgets
             title_font = ctk.CTkFont(family = 'Impact', size = 18, underline = True)
             ctk.CTkLabel(self, text = 'User ID', font = title_font).place(anchor = 'center', relx = 0.15, rely = 0.35)
             ctk.CTkLabel(self, text = 'Card ID', font = title_font).place(anchor = 'center', relx = 0.77, rely = 0.35)
@@ -718,14 +752,17 @@ class ContentFrame(ctk.CTkFrame):
             ctk.CTkLabel(self, text = 'There are no records', font = ('Impact', 50)).place(anchor = 'center', relx = 0.5, rely = 0.5)
 
 #Analytics
+    #A method which displays two options to choose from to the user.
     def analytics_page(self):
         self.clear_frame()
         ctk.CTkLabel(self, text = 'Analytics', font = ('Impact', 75)).place(anchor = 'center', relx = 0.5, rely = 0.15)
         ctk.CTkButton(self, text = 'Bookings per facility', width = 200, height = 200, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.bookings_per_facility_page).place(anchor = 'e', relx = 0.45, rely = 0.5)
         ctk.CTkButton(self, text = 'Booking trends\nover time', width = 200, height = 200, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.booking_trends_over_time_page).place(anchor = 'w', relx = 0.55, rely = 0.5)
 
+    #A method to show the filter options the user can choose from to display a cofiguration of a graph.
     def bookings_per_facility_page(self):
         self.clear_frame()
+        #Variables
         self.options = ('All-Time', 'Day', 'Date')
         self.option = ctk.StringVar()
         self.option.set('All-Time')
@@ -738,6 +775,7 @@ class ContentFrame(ctk.CTkFrame):
         self.status.set('All')
         self.days = ('Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday')
         self.day = ctk.StringVar()
+        #Widgets
         ctk.CTkComboBox(self, variable = self.option, values = self.options, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15), command = self.options_choice_bookings_per_facility_page).place(anchor = 'center', relx = 0.5, rely = 0.1)
         ctk.CTkComboBox(self, variable = self.facility, values = self.facilities, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.5, rely = 0.2)
         ctk.CTkComboBox(self, variable = self.status, values = self.statuses, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.5, rely = 0.3)
@@ -748,8 +786,10 @@ class ContentFrame(ctk.CTkFrame):
         self.end_date_button = ctk.CTkButton(self, state = 'disabled', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Select End Date", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.get_end_date)
         self.end_date_button.place(anchor = 'center', relx = 0.5, rely = 0.6)
         ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Generate', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.bookings_per_facility_func).place(anchor = 'center', relx = 0.5, rely = 0.7)
-    
+
+    #A method to activate and deactivate certain combo boxes depending on the user's selection.    
     def options_choice_bookings_per_facility_page(self, event):
+        #Checks if the combo box is set to day, it then disables the button to choose the date and activates the day combo box and vice versa.
         if event == 'Day':
             self.days_combobox.configure(state = 'readonly')
             self.start_date_button.configure(state = 'disabled')
@@ -759,20 +799,31 @@ class ContentFrame(ctk.CTkFrame):
             self.start_date_button.configure(state = 'normal')
             self.end_date_button.configure(state = 'normal')
 
+    #This creates a window pop up to show a calendar where the user can choose the start date.
     def get_start_date(self):
+        #Creates the calendar
         calender = Querybox()
+        #Shows the user the calendar and retrieves the value selected.
         self.start_date = calender.get_date(title = 'Calender', bootstyle = 'dark')
+        #Changes the button to the start date chosen.
         self.start_date_button.configure(text = self.start_date)
-    
+
+    #This creates a window pop up to show a calendar where the user can choose the end date.
     def get_end_date(self):
+        #Creates the calendar
         calender = Querybox()
+        #Shows the user the calendar and retrieves the value selected.
         self.end_date = calender.get_date(title = 'Calender', bootstyle = 'dark')
+        #Changes the button to the start date chosen.
         self.end_date_button.configure(text = self.end_date)
 
+    #A method to carry out the backend process of retrieving the specific bookings from the specific configuration the user has choosed from.
     def bookings_per_facility_func(self):
+        #Checks the specific filter configuation of the user and carries out the specific sql command of counting the bookings which are retrieved of that configuartion.
         if self.option.get() == 'All-Time':
             if self.facility.get() == 'All':
                 if self.status.get() == 'All':
+                    #(All time)(All facilities)(All statuses)
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
                                             FROM Booking, Facility
                                             WHERE Booking.facility_id = Facility.facility_id
@@ -780,6 +831,7 @@ class ContentFrame(ctk.CTkFrame):
                                             ORDER BY booking_count DESC''').fetchall()
                     title = 'Total Booking Counts Per Facility'
                 else:
+                    #(All time)(All facilities)(specific status)
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
                                             FROM Booking, Facility
                                             WHERE Booking.facility_id = Facility.facility_id
@@ -789,6 +841,7 @@ class ContentFrame(ctk.CTkFrame):
                     title = f'Total Booking Counts Per Facility ({self.statuses_dict[self.status.get()]})'
             else:
                 if self.status.get() == 'All':
+                    #(All time)(Specific Facility)(All statuses)
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
                                             FROM Booking, Facility
                                             WHERE Booking.facility_id = Facility.facility_id
@@ -797,6 +850,7 @@ class ContentFrame(ctk.CTkFrame):
                                             ORDER BY booking_count DESC''', (self.facility.get(),)).fetchall()
                     title = f'Total Booking Counts Per Facility ({self.facility.get()})'
                 else:
+                    #(All time)(Specific Facility)(Specifc status)
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
                                             FROM Booking, Facility
                                             WHERE Booking.facility_id = Facility.facility_id
@@ -809,6 +863,7 @@ class ContentFrame(ctk.CTkFrame):
         elif self.option.get() == 'Day':
             if self.facility.get() == 'All':
                 if self.status.get() == 'All':
+                    #(Specific day)(All Facilities)(All statuses)
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
                                             FROM Booking, Facility, Timeslot
                                             WHERE Booking.facility_id = Facility.facility_id
@@ -818,6 +873,7 @@ class ContentFrame(ctk.CTkFrame):
                                             ORDER BY booking_count DESC''', (self.day.get(),)).fetchall()
                     title = f'Total Booking Counts Per Facility ({self.day.get()})'
                 else:
+                    #(Specific day)(All Facilities)(Specific Status)
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
                                             FROM Booking, Facility, Timeslot
                                             WHERE Booking.facility_id = Facility.facility_id
@@ -830,6 +886,7 @@ class ContentFrame(ctk.CTkFrame):
                     title = f'Total Booking Counts Per Facility ({self.day.get()})({self.status.get()})'
             else:
                 if self.status.get() == 'All':
+                    #(Specific day)(Specific Facility)(All Statuses)
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
                                             FROM Booking, Facility, Timeslot
                                             WHERE Booking.facility_id = Facility.facility_id
@@ -840,6 +897,7 @@ class ContentFrame(ctk.CTkFrame):
                                             ORDER BY booking_count DESC''', (self.day.get(), self.facility.get())).fetchall()
                     title = f'Total Booking Counts Per Facility ({self.day.get()})({self.facility.get()})'
                 else:
+                    #(Specific day)(Specific Facility)(Specific Status)
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
                                             FROM Booking, Facility, Timeslot
                                             WHERE Booking.facility_id = Facility.facility_id
@@ -853,6 +911,7 @@ class ContentFrame(ctk.CTkFrame):
         else:
             if self.facility.get() == 'All':
                 if self.status.get() == 'All':
+                    #(Specific date range)(All facilities)(All statuses)
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
                                             FROM Booking, Facility
                                             WHERE Booking.facility_id = Facility.facility_id
@@ -862,6 +921,7 @@ class ContentFrame(ctk.CTkFrame):
                                             ORDER BY booking_count DESC''', (self.start_date, self.end_date)).fetchall()
                     title = f'Total Booking Counts Per Facility ({self.start_date}) to ({self.end_date})'
                 else:
+                    #(Specific date range)(All facilities)(Specific Status)
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
                                             FROM Booking, Facility
                                             WHERE Booking.facility_id = Facility.facility_id
@@ -874,6 +934,7 @@ class ContentFrame(ctk.CTkFrame):
                     title = f'Total Booking Counts Per Facility ({self.start_date}) to ({self.end_date})({self.status.get()})'
             else:
                 if self.status.get() == 'All':
+                    #(Specific date range)(Specific Facility)(All Statuses)
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
                                             FROM Booking, Facility
                                             WHERE Booking.facility_id = Facility.facility_id
@@ -884,6 +945,7 @@ class ContentFrame(ctk.CTkFrame):
                                             ORDER BY booking_count DESC''', (self.start_date, self.end_date, self.facility.get())).fetchall()
                     title = f'Total Booking Counts Per Facility ({self.start_date}) to ({self.end_date})({self.facility.get()})'
                 else:
+                    #(Specific date range)(Specific Facility)(Specific Status)
                     result = cursor.execute('''SELECT facility_name, COUNT(*) as booking_count
                                             FROM Booking, Facility
                                             WHERE Booking.facility_id = Facility.facility_id
@@ -894,20 +956,31 @@ class ContentFrame(ctk.CTkFrame):
                                             GROUP BY facility_name
                                             ORDER BY booking_count DESC''', (self.start_date, self.end_date, self.facility.get(), self.statuses_dict[self.status.get()])).fetchall()
                     title = f'Total Booking Counts Per Facility ({self.start_date}) to ({self.end_date})({self.facility.get()})({self.status.get()})'
+        #Checks if there are any bookings for that configuration.
         if result != []:
+            #Seperates the specific facility and count for each.
             facilities, counts = zip(*result)
+            #Creates a matplotlib figure
             plt.figure(figsize = (10, 6), edgecolor = 'black')
+            #Creates a bar graph with the specific values with the facilities being on the x axis and the counts on the y axis.
             plt.bar(facilities, counts, color = theme_color, edgecolor = 'black')
+            #Gives the graph a title of th specific configuration.
             plt.title(title)
+            #Gives the axis their respective labels.
             plt.xlabel('Facility')
             plt.ylabel('Booking Count')
             plt.grid(axis='y')
+            #This creates tooltips for each of the bars on the graph to show their actual values.
             mplcursors.cursor(hover=True).connect("add", lambda sel: sel.annotation.set_text(f'Value: {counts[sel.target.index]}'))
+            #This shows the graph of that specific configuration on a pop up window.
             plt.show()
         else:
-            messagebox.showinfo('No Results', 'There are no bookings of this configuration.')
+            #Shows an appropriate message if there are bo bookings for this configuration.
+            messagebox.showinfo('No Results', 'There are no bookings for this configuration.')
 
+    #A method to show the filter options the user can choose from to display a configuration of a graph.
     def booking_trends_over_time_page(self):
+        #Variables
         self.clear_frame()
         self.options = ('All-Time', 'Date')
         self.option = ctk.StringVar()
@@ -915,6 +988,7 @@ class ContentFrame(ctk.CTkFrame):
         self.facilities = ('All', 'Football', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
         self.facility = ctk.StringVar()
         self.facility.set('All')
+        #Widgets
         ctk.CTkComboBox(self, variable = self.option, values = self.options, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15), command = self.options_choice_booking_trends_over_time_page).place(anchor = 'center', relx = 0.5, rely = 0.1)
         ctk.CTkComboBox(self, variable = self.facility, values = self.facilities, state = 'readonly', border_color = 'black', button_color = 'black', dropdown_font = ('Impact', 15)).place(anchor = 'center', relx = 0.5, rely = 0.2)
         self.start_date_button = ctk.CTkButton(self, state = 'disabled', hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Select Start Date", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.get_start_date)
@@ -923,6 +997,7 @@ class ContentFrame(ctk.CTkFrame):
         self.end_date_button.place(anchor = 'center', relx = 0.5, rely = 0.4)
         ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = 'Generate', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.booking_trends_over_time_func).place(anchor = 'center', relx = 0.5, rely = 0.5)
 
+    #A method to activate and deactivate certain combo boxes depending on the user's selection.    
     def options_choice_booking_trends_over_time_page(self, event):
             if event == 'All-Time':
                 self.start_date_button.configure(state = 'disabled')
@@ -931,14 +1006,18 @@ class ContentFrame(ctk.CTkFrame):
                 self.start_date_button.configure(state = 'normal')
                 self.end_date_button.configure(state = 'normal')
 
+    #A method to carry out the backend process of retrieving the specific bookings from the specific configuration the user has choosed from.
     def booking_trends_over_time_func(self):
+        #Checks the specific filter configuation of the user and carries out the specific sql command of counting the bookings which are retrieved of that configuartion.
         if self.option.get() == 'All-Time':
             if self.facility.get() == 'All':
+                #(All time)(All facilities)
                 result = cursor.execute('''SELECT booking_date, COUNT(*) as booking_count
                                         FROM Booking
                                         GROUP BY booking_date
                                         ORDER BY booking_date;''').fetchall()
             else:
+                #(All time)(Specific facility)
                 result = cursor.execute('''SELECT booking_date, COUNT(*) as booking_count
                                         FROM Booking, Facility
                                         WHERE Booking.facility_id = Facility.facility_id
@@ -947,13 +1026,14 @@ class ContentFrame(ctk.CTkFrame):
                                         ORDER BY booking_date;''', (self.facility.get(),)).fetchall()    
         else:
             if self.facility.get() == 'All':
+                #(Specific date range)(All facilities)
                 result = cursor.execute('''SELECT booking_date, COUNT(*) as booking_count
                                         FROM Booking
                                         WHERE booking_date >= ?
                                         AND booking_date <= ?
                                         GROUP BY booking_date
                                         ORDER BY booking_date;''', (self.start_date, self.end_date)).fetchall()   
-            else:
+            else:#(Specific date range)(Specific facility)
                 result = cursor.execute('''SELECT booking_date, COUNT(*) as booking_count
                                         FROM Booking
                                         WHERE Booking.facility_id = Facility.facility_id
@@ -962,26 +1042,25 @@ class ContentFrame(ctk.CTkFrame):
                                         AND Facility.facility_name = ?
                                         GROUP BY booking_date
                                         ORDER BY booking_date;''', (self.start_date, self.end_date, self.facility.get())).fetchall()            
+        #Checks if there are any bookings for that configuration.
         if result != []:
             # Separate dates and counts
             dates, counts = zip(*result)
-
             # Convert date strings to datetime objects
             dates = [datetime.strptime(date, '%Y-%m-%d') for date in dates]
-
             # Plot the data
             plt.figure(figsize=(10, 6))
             plt.plot_date(dates, counts, '-', color = theme_color)
             plt.title('Booking Trends Over Time')
             plt.xlabel('Date')
             plt.ylabel('Booking Count')
-
             # Formatting the x-axis to show dates nicely
             plt.gca().xaxis.set_major_locator(mdates.MonthLocator())
             plt.gca().xaxis.set_major_formatter(mdates.DateFormatter('%Y-%m-%d'))
             plt.gcf().autofmt_xdate()
             plt.show()
         else:
+            #Shows an appropriate message if there are bo bookings for this configuration.
             messagebox.showinfo('No Results', 'There are no bookings of this configuration.')
 
 #Facility Support
