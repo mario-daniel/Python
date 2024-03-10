@@ -141,15 +141,20 @@ class IncomingApprovalSegment(ctk.CTkFrame):
         else:
             self.toplevel_window.focus()
 
-class Scheduled_Booking_Segment(ctk.CTkFrame):
+#A class which inherits a frame from the customtkinter module which uses multiple bookings to replicate the same object with a few differences.
+class ScheduledBookingSegment(ctk.CTkFrame):
+    #A constructor method which defines itself, where the frame will be sitting on top off and the details of the user and their card along with info of the booking and its objects.
     def __init__(self, parent, booking_objects, booking, card, user):
+        #A super constructor method which defines the frame's attributes from which this class inherits from.
         super().__init__(master = parent)
         self.booking_objects = booking_objects
         self.user = user
         self.card = card
         self.booking = booking
+        #Creating a 1 dimensional grid to display the booking.
         self.rowconfigure(0, weight = 1)
         self.columnconfigure((0, 1, 2, 3, 4, 5, 6), weight = 1)
+        #Widgets
         ctk.CTkButton(self, text = self.booking[11], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover_color = '#d4d4d4', corner_radius = 0, command = self.open_toplevel).grid(row = 0, column = 0)
         ctk.CTkButton(self, text = self.booking[1], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 1)
         ctk.CTkButton(self, text = self.booking[2], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 2)
@@ -157,20 +162,33 @@ class Scheduled_Booking_Segment(ctk.CTkFrame):
         ctk.CTkButton(self, text = self.booking[4], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 4)
         ctk.CTkButton(self, text = self.booking[5], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 5)
         self.toplevel_window = None
+        #Checks whether the an admin access this page.
         if self.user.user_id[0] == 'A':
+            #Loads an extra button to remove the booking.
             close_button = ctk.CTkImage(light_image = Image.open("Images/close.png"), size = (22,22))
             ctk.CTkButton(self, text = '', image = close_button, width = 10, hover_color = '#F0F0F0', fg_color = '#d4d4d4', bg_color = '#d4d4d4', command = self.decline_booking).grid(row = 0, column = 6)
         self.pack(pady = 10)
     
+    #A method which carries out the backend process of removing a booking.
     def decline_booking(self):
+        #These two line updates the record to set the status to False from the previous True value in both the Booking and Timeslot table.
         cursor.execute('UPDATE Timeslot SET status = FALSE WHERE timeslot_id = ?', (self.card.card_id,))
         cursor.execute('UPDATE Booking SET approved = FALSE WHERE booking_number = ?', (self.booking[0],))
         conn.commit()
-        for booking_object in self.booking_objects: 
+        self.delete_booking_object()
+
+    #A method which deletes the approval object and remove it from the bookings array.
+    def delete_booking_object(self):
+        #Cycles through every object in the objects array.
+        for booking_object in self.booking_objects:
+            #Checks if the object has the same user id as the bookings user id. 
             if booking_object.booking[0] == self.booking[0]:
+                #Cycles through every widget in the frame and destroys it.
                 for widget in booking_object.winfo_children():
                     widget.destroy()
+                #Removes the object from the object array.
                 self.booking_objects.remove(booking_object)
+                #Deletes the object entirely.
                 del booking_object 
   
     def open_toplevel(self):
@@ -575,9 +593,12 @@ class ContentFrame(ctk.CTkFrame):
                 ctk.CTkLabel(self, text = 'You have no requests sent', font = ('Impact', 50)).place(anchor = 'center', relx = 0.5, rely = 0.5)
 
 #Schedule Viewer
+    #A method which displays the accepted bookings.
     def schedule_viewer(self):
         self.clear_frame()
+        #Checks whether a teacher or admin is using the accessing the page.
         if self.user.user_id[0] == 'A':
+            #Retrives all records from the booking table of which are approved.
             bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id, User.first_name, User.last_name, User.class_grade, User.user_id
                                         FROM Facility, Timeslot, Booking, User
                                         WHERE Booking.facility_id = Facility.facility_id
@@ -585,6 +606,7 @@ class ContentFrame(ctk.CTkFrame):
                                         AND Booking.timeslot_id = Timeslot.timeslot_id
                                         AND User.user_id = Booking.user_id;''').fetchall()
         elif self.user.user_id[0] == 'T':
+            #Retrives all records from the booking table of which are approved and the facility of which the teacher is entitled to.
             bookings = cursor.execute('''SELECT Booking.booking_number, Facility.facility_name, Timeslot.start_time, Timeslot.end_time, Timeslot.day, Booking.booking_date, Booking.approved, Booking.timeslot_id, User.first_name, User.last_name, User.class_grade, User.user_id
                                         FROM Facility, Timeslot, Booking, User
                                         WHERE Booking.facility_id = Facility.facility_id
@@ -592,13 +614,20 @@ class ContentFrame(ctk.CTkFrame):
                                         AND Booking.timeslot_id = Timeslot.timeslot_id
                                         AND User.user_id = Booking.user_id
                                         AND Facility.facility_id = ?;''', (self.user.facility_id,)).fetchall()
+        #Checks if there are any records and shows the appropriate widgets on the screen.
         if bookings != []:
-            booking_objects = []
+            #A scrollable frame widget which allows for multiple bookings to be shown at once on the screen.
             bookings_frame = ctk.CTkScrollableFrame(self, width = 620, height = 342, corner_radius = 0, border_color = 'black', border_width = 2) #fg_color = '#F0F0F0')
             bookings_frame.place(anchor = 'n', relx = 0.5, rely = 0.36)
+            #An array to carry all booking objects that will be created.
+            booking_objects = []
+            #Goes through every booking that has been retrieved from the database.
             for booking in bookings:
-                approval_object = Scheduled_Booking_Segment(bookings_frame, booking_objects, booking, self.card, self.user)
+                #Creates an object using the ScheduledBookingSegment class.
+                approval_object = ScheduledBookingSegment(bookings_frame, booking_objects, booking, self.card, self.user)
+                #Appends the object created to the previously created array.                
                 booking_objects.append(approval_object)
+            #Widgets
             title_font = ctk.CTkFont(family = 'Impact', size = 18, underline = True)
             ctk.CTkLabel(self, text = 'Scheduled Bookings', font = ('Impact', 75)).place(anchor = 'center', relx = 0.5, rely = 0.15)
             ctk.CTkLabel(self, text = 'User ID', font = title_font).place(anchor = 'center', relx = 0.085, rely = 0.33)
