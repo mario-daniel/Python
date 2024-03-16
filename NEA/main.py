@@ -27,8 +27,9 @@ window_frame.pack(expand = True, fill = 'both')
 #This sets the customtkiner appearance mode to light.
 ctk.set_appearance_mode('light')
 
+#A class which stores the details of the user.
 class User:
-    def __init__(self, user_id, first_name, last_name, hashed_password, salt, grade, facility_id, login_count):
+    def __init__(self, user_id, first_name, last_name, hashed_password, salt, grade, facility_id):
         self.user_id = user_id
         self.first_name = first_name
         self.last_name = last_name
@@ -36,24 +37,35 @@ class User:
         self.salt = salt
         self.grade = grade
         self.facility_id = facility_id
-        self.login_count = login_count
-
+    
+#A class which stores the details of the user's card.
 class Card:
     def __init__(self, card_id, tag_id):
         self.card_id = card_id
         self.tag_id = tag_id
 
+#A class which inherits a frame from the customtkinter module which uses multiple bookings to replicate the same object with a few differences.
 class OutgoingApprovalSegment(ctk.CTkFrame):
+    #A constructor method which defines itself, where the frame will be sitting on top off, the specific booking and it's corresponding object.
     def __init__(self, parent, booking, status, outgoing_approval_objects):
+        #A super constructor method which defines the frame's attributes from which this class inherits from.
         super().__init__(master = parent, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
         self.booking = booking
         self.outgoing_approval_objects = outgoing_approval_objects
+        #Creating a 1 dimensional grid to display the booking.
         self.rowconfigure(0, weight = 1)
         self.columnconfigure((0, 1, 2, 3, 4, 5, 6), weight = 1)
-        ctk.CTkButton(self, text = self.booking[1], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 0)
+        facility = booking[1]
+        if facility == 'Multi-Purpose Hall':
+            facility = 'MPH'
+        #Each widget is a value from the record.
+        ctk.CTkButton(self, text = facility, width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 0)
         ctk.CTkButton(self, text = self.booking[2], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 1)
         ctk.CTkButton(self, text = self.booking[3], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 2)
-        ctk.CTkButton(self, text = self.booking[4], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 3)
+        if booking[4] == 'Wednesday':
+            ctk.CTkButton(self, text = self.booking[4], width = 100, height = 30, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 15), hover = False, corner_radius = 0).grid(row = 0, column = 3)
+        else:
+            ctk.CTkButton(self, text = self.booking[4], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 3)        
         ctk.CTkButton(self, text = self.booking[5], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 4)
         ctk.CTkButton(self, text = status, width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 5)
         if status != 'Approved':
@@ -61,16 +73,27 @@ class OutgoingApprovalSegment(ctk.CTkFrame):
             ctk.CTkButton(self, text = '', image = close_button, width = 10, hover_color = '#F0F0F0', fg_color = '#d4d4d4', bg_color = '#d4d4d4', command = self.remove_booking,).grid(row = 0, column = 6)
         self.pack(pady = 10)
 
+    #A method which carries out the backend process of removing the request.
     def remove_booking(self):
+        #These two line updates the record to set the status to False from the previous Null value in both the Booking and Timeslot table.
         cursor.execute('UPDATE Timeslot SET status = FALSE WHERE timeslot_id = ?', (self.booking[7],))
         cursor.execute('DELETE FROM Booking WHERE booking_number = ?', (self.booking[0],))
         conn.commit()
-        for approval_object in self.outgoing_approval_objects: 
+        self.delete_approval_object()
+
+    #A method which deletes the approval object and remove it from the bookings array.
+    def delete_approval_object(self):
+        #Cycles through every object in the objects array.
+        for approval_object in self.outgoing_approval_objects:
+            #Checks if the object has the same user id as the bookings user id.
             if approval_object.booking[0] == self.booking[0]:
+                #Cycles through every widget in the frame and destroys it.
                 for widget in approval_object.winfo_children():
                     widget.destroy()
+                #Removes the object from the object array.
                 self.outgoing_approval_objects.remove(approval_object)
-                del approval_object
+                #Deletes the object entirely.
+                del approval_object 
 
 #A class which inherits a frame from the customtkinter module which is used multiple timings to replicate the same object with a few differences.
 class IncomingApprovalSegment(ctk.CTkFrame):
@@ -88,13 +111,19 @@ class IncomingApprovalSegment(ctk.CTkFrame):
         #Images files are loaded for accepting or declining.
         close_button = ctk.CTkImage(light_image = Image.open("Images/close.png"), size = (22,22))
         check_button = ctk.CTkImage(light_image = Image.open("Images/check.png"), size = (22,22))
+        facility = booking[1]
+        if facility == 'Multi-Purpose Hall':
+            facility = 'MPH'
         #Each widget is a value from the record.
-        ctk.CTkButton(self, text = self.booking[11], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover_color = '#d4d4d4', corner_radius = 0, command = self.open_toplevel).grid(row = 0, column = 0)
-        ctk.CTkButton(self, text = self.booking[1], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 1)
-        ctk.CTkButton(self, text = self.booking[2], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 2)
-        ctk.CTkButton(self, text = self.booking[3], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 3)
-        ctk.CTkButton(self, text = self.booking[4], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 4)
-        ctk.CTkButton(self, text = self.booking[5], width = 80, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 5)
+        ctk.CTkButton(self, text = self.booking[11], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover_color = '#d4d4d4', corner_radius = 0, command = self.open_toplevel).grid(row = 0, column = 0)
+        ctk.CTkButton(self, text = facility, width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 1)
+        ctk.CTkButton(self, text = self.booking[2], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 2)
+        ctk.CTkButton(self, text = self.booking[3], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 3)
+        if booking[4] == 'Wednesday':
+            ctk.CTkButton(self, text = self.booking[4], width = 100, height = 30, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 15), hover = False, corner_radius = 0).grid(row = 0, column = 4)
+        else:
+            ctk.CTkButton(self, text = self.booking[4], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 4)
+        ctk.CTkButton(self, text = self.booking[5], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 5)
         ctk.CTkButton(self, text = '', image = check_button, width = 10, hover_color = '#F0F0F0', fg_color = '#d4d4d4', bg_color = '#d4d4d4', command = self.accept_booking).grid(row = 0, column = 8)
         ctk.CTkButton(self, text = '', image = close_button, width = 10, hover_color = '#F0F0F0', fg_color = '#d4d4d4', bg_color = '#d4d4d4', command = self.decline_booking).grid(row = 0, column = 9)
         self.pack(pady = 10)
@@ -154,12 +183,18 @@ class ScheduledBookingSegment(ctk.CTkFrame):
         #Creating a 1 dimensional grid to display the booking.
         self.rowconfigure(0, weight = 1)
         self.columnconfigure((0, 1, 2, 3, 4, 5, 6), weight = 1)
+        facility = booking[1]
+        if facility == 'Multi-Purpose Hall':
+            facility = 'MPH'
         #Widgets
         ctk.CTkButton(self, text = self.booking[11], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover_color = '#d4d4d4', corner_radius = 0, command = self.open_toplevel).grid(row = 0, column = 0)
-        ctk.CTkButton(self, text = self.booking[1], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 1)
+        ctk.CTkButton(self, text = facility, width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 1)
         ctk.CTkButton(self, text = self.booking[2], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 2)
         ctk.CTkButton(self, text = self.booking[3], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 3)
-        ctk.CTkButton(self, text = self.booking[4], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 4)
+        if booking[4] == 'Wednesday':
+            ctk.CTkButton(self, text = self.booking[4], width = 100, height = 30, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 15), hover = False, corner_radius = 0).grid(row = 0, column = 4)
+        else:
+            ctk.CTkButton(self, text = self.booking[4], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 4)
         ctk.CTkButton(self, text = self.booking[5], width = 100, border_color = 'black', border_width = 2, text_color = 'black', fg_color = 'white', font = ('Impact', 18), hover = False, corner_radius = 0).grid(row = 0, column = 5)
         self.toplevel_window = None
         #Checks whether the an admin access this page.
@@ -572,12 +607,12 @@ class ContentFrame(ctk.CTkFrame):
                 #Widgets
                 title_font = ctk.CTkFont(family = 'Impact', size = 18, underline = True)
                 ctk.CTkLabel(self, text = 'Incoming Approvals', font = ('Impact', 70)).place(anchor = 'center', relx = 0.5, rely = 0.15)
-                ctk.CTkLabel(self, text = 'User ID', font = title_font).place(anchor = 'center', relx = 0.08, rely = 0.33)
-                ctk.CTkLabel(self, text = 'Facility', font = title_font).place(anchor = 'center', relx = 0.24, rely = 0.33)
-                ctk.CTkLabel(self, text = 'Start Time', font = title_font).place(anchor = 'center', relx = 0.4, rely = 0.33)
-                ctk.CTkLabel(self, text = 'End Time', font = title_font).place(anchor = 'center', relx = 0.54, rely = 0.33)
-                ctk.CTkLabel(self, text = 'Day', font = title_font).place(anchor = 'center', relx = 0.65, rely = 0.33)
-                ctk.CTkLabel(self, text = 'Date', font = title_font).place(anchor = 'center', relx = 0.78, rely = 0.33)
+                ctk.CTkLabel(self, text = 'User ID', font = title_font).place(anchor = 'center', relx = 0.085, rely = 0.33)
+                ctk.CTkLabel(self, text = 'Facility', font = title_font).place(anchor = 'center', relx = 0.22, rely = 0.33)
+                ctk.CTkLabel(self, text = 'Start Time', font = title_font).place(anchor = 'center', relx = 0.36, rely = 0.33)
+                ctk.CTkLabel(self, text = 'End Time', font = title_font).place(anchor = 'center', relx = 0.5, rely = 0.33)
+                ctk.CTkLabel(self, text = 'Day', font = title_font).place(anchor = 'center', relx = 0.64, rely = 0.33)
+                ctk.CTkLabel(self, text = 'Date', font = title_font).place(anchor = 'center', relx = 0.77, rely = 0.33)
             else:
                 ctk.CTkLabel(self, text = 'There are no incoming requests', font = ('Impact', 45)).place(anchor = 'center', relx = 0.5, rely = 0.5)   
         else:
@@ -681,58 +716,48 @@ class ContentFrame(ctk.CTkFrame):
 
     #A method to carry out the backend processes of retrieving values from the database to show them to the user in a presentable way.
     def all_records_func(self):
-        #Checks whether a teacher or admin is accessing this page.
-        if self.user.user_id[0] == 'A':
-            #Checks whether a filter is applied or not.
-            if self.selection_occupation.get() == 'All':
-                    self.facility_combobox.configure(state = 'disabled')
-                    #Retrieves all the teacher records. 
-                    teacher_records = cursor.execute('''SELECT User.user_id, facility_name, first_name, last_name, card_id
-                                            FROM User, Card, Facility
-                                            WHERE User.user_id = Card.user_id
-                                            AND User.user_id <> 'A'
-                                            AND Facility.facility_id = User.facility_id;''').fetchall()
-                    #Retrieves all the student records.
-                    student_records = cursor.execute('''SELECT User.user_id, class_grade, first_name, last_name, card_id
-                                            FROM User, Card
-                                            WHERE User.user_id = Card.user_id
-                                            AND User.user_id <> 'A'
-                                            AND User.facility_id IS NULL''').fetchall()
-                    #Combines them into all records.
-                    records = teacher_records + student_records
-            elif self.selection_occupation.get() == 'Teachers':
-                self.facility_combobox.configure(state = 'readonly')    
-                if self.selection_facility.get() == 'All':
-                    #Retrieves all teachers.
-                    records = cursor.execute('''SELECT User.user_id, facility_name, first_name, last_name, card_id
-                                            FROM User, Card, Facility
-                                            WHERE User.user_id = Card.user_id
-                                            AND User.user_id <> 'A'
-                                            AND Facility.facility_id = User.facility_id;''').fetchall()
-                else:
-                    #Retrieves all teachers responsible for a specific facility.
-                    records = cursor.execute('''SELECT User.user_id, facility_name, first_name, last_name, card_id
-                                            FROM User, Card, Facility
-                                            WHERE User.user_id = Card.user_id
-                                            AND User.user_id <> 'A'
-                                            AND Facility.facility_id = User.facility_id
-                                            AND Facility.facility_name = ?;''', (self.selection_facility.get(),)).fetchall()
-            elif self.selection_occupation.get() == 'Students':
+        #Checks whether a filter is applied or not.
+        if self.selection_occupation.get() == 'All':
                 self.facility_combobox.configure(state = 'disabled')
-                #Retrieves all students.  
-                records = cursor.execute('''SELECT User.user_id, class_grade, first_name, last_name, card_id
-                                            FROM User, Card
-                                            WHERE User.user_id = Card.user_id
-                                            AND User.user_id <> 'A'
-                                            AND User.facility_id IS NULL''').fetchall()
-        elif self.user.user_id[0] == 'T':
-            #Retrieves all students for the facility the teacher is entitled to.
+                #Retrieves all the teacher records. 
+                teacher_records = cursor.execute('''SELECT User.user_id, facility_name, first_name, last_name, card_id
+                                        FROM User, Card, Facility
+                                        WHERE User.user_id = Card.user_id
+                                        AND User.user_id <> 'A'
+                                        AND Facility.facility_id = User.facility_id;''').fetchall()
+                #Retrieves all the student records.
+                student_records = cursor.execute('''SELECT User.user_id, class_grade, first_name, last_name, card_id
+                                        FROM User, Card
+                                        WHERE User.user_id = Card.user_id
+                                        AND User.user_id <> 'A'
+                                        AND User.facility_id IS NULL''').fetchall()
+                #Combines them into all records.
+                records = teacher_records + student_records
+        elif self.selection_occupation.get() == 'Teachers':
+            self.facility_combobox.configure(state = 'readonly')    
+            if self.selection_facility.get() == 'All':
+                #Retrieves all teachers.
+                records = cursor.execute('''SELECT User.user_id, facility_name, first_name, last_name, card_id
+                                        FROM User, Card, Facility
+                                        WHERE User.user_id = Card.user_id
+                                        AND User.user_id <> 'A'
+                                        AND Facility.facility_id = User.facility_id;''').fetchall()
+            else:
+                #Retrieves all teachers responsible for a specific facility.
+                records = cursor.execute('''SELECT User.user_id, facility_name, first_name, last_name, card_id
+                                        FROM User, Card, Facility
+                                        WHERE User.user_id = Card.user_id
+                                        AND User.user_id <> 'A'
+                                        AND Facility.facility_id = User.facility_id
+                                        AND Facility.facility_name = ?;''', (self.selection_facility.get(),)).fetchall()
+        elif self.selection_occupation.get() == 'Students':
+            self.facility_combobox.configure(state = 'disabled')
+            #Retrieves all students.  
             records = cursor.execute('''SELECT User.user_id, class_grade, first_name, last_name, card_id
-                                    FROM User, Card, Facility
-                                    WHERE User.user_id = Card.user_id
-                                    AND User.user_id <> 'A'
-                                    AND User.facility_id IS NULL
-                                    AND Facility.facility_id = ?;''', (self.user.facility_id,)).fetchall()
+                                        FROM User, Card
+                                        WHERE User.user_id = Card.user_id
+                                        AND User.user_id <> 'A'
+                                        AND User.facility_id IS NULL''').fetchall()
         #Checks whether there are any records and shows the appropriate widgets.
         if records != []:
             record_objects = []
@@ -1063,6 +1088,70 @@ class ContentFrame(ctk.CTkFrame):
             #Shows an appropriate message if there are bo bookings for this configuration.
             messagebox.showinfo('No Results', 'There are no bookings of this configuration.')
 
+#Add Records
+    #A method to show the admin empty entry boxed for them to input a new user into the system.
+    def add_records_page(self):
+        self.clear_frame()
+        #Variables
+        self.user_id = ctk.StringVar()
+        self.first_name = ctk.StringVar()
+        self.last_name = ctk.StringVar()
+        self.class_facility = ctk.StringVar()
+        self.class_facility_bool = ctk.BooleanVar()
+        self.facilities = ('Football', 'Sixth Form Room', 'Basketball', 'Cricket', 'Multi-Purpose Hall', 'Fitness Suite')
+        self.classes = ('9A', '9B', '9C', '9D', '10A', '10B', '10C', '10D', '11A', '11B', '11C', '11D', '12A', '12B', '12C', '12D', '13A', '13B', '13C', '13D')
+        #Widgets
+        ctk.CTkLabel(self, text = 'Add User', font = ('Impact', 70)).place(anchor = 'center', relx = 0.5, rely = 0.17)
+        ctk.CTkLabel(self, text = 'First Name', font = ('Impact', 20)).place(anchor = 'center', relx = 0.2, rely = 0.32)
+        ctk.CTkEntry(self, textvariable = self.first_name, width = 215, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.3, rely = 0.37)
+        ctk.CTkLabel(self, text = 'Last Name', font = ('Impact', 20)).place(anchor = 'center', relx = 0.6, rely = 0.32)
+        ctk.CTkEntry(self, textvariable = self.last_name, width = 215, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.7, rely = 0.37)
+        ctk.CTkLabel(self, text = 'User ID', font = ('Impact', 20)).place(anchor = 'center', relx = 0.18, rely = 0.47)
+        ctk.CTkEntry(self, textvariable = self.user_id, width = 215, border_color = 'black', border_width = 2, corner_radius = 0).place(anchor = 'center', relx = 0.3, rely = 0.52)
+        ctk.CTkLabel(self, text = 'Occupation', font = ('Impact', 20)).place(anchor = 'center', relx = 0.61, rely = 0.47)
+        student_button = ctk.CTkRadioButton(self, text = 'Student', fg_color = 'black', border_color = 'black', hover_color = '#707070', radiobutton_height = 10, radiobutton_width = 10, variable = self.class_facility_bool, value = True, command = self.student_or_teacher)
+        student_button.place(anchor = 'center', relx = 0.62, rely = 0.52)
+        ctk.CTkLabel(self, text = 'Facility', font = ('Impact', 20))
+        teacher_button = ctk.CTkRadioButton(self, text = 'Teacher', fg_color = 'black', border_color = 'black', hover_color = '#707070', radiobutton_height = 10, radiobutton_width = 10, variable = self.class_facility_bool, value = False, command = self.student_or_teacher)
+        teacher_button.place(anchor = 'center', relx = 0.8, rely = 0.52)
+        self.Label = ctk.CTkLabel(self, text = 'Select Occupation', font = ('Impact', 20))
+        self.Label.place(anchor = 'center', relx = 0.5, rely = 0.62)
+        self.grade_facility_combobox = ctk.CTkComboBox(self, border_color = 'black', button_color = 'black', state = 'disabled', variable = self.class_facility, values = '', width = 215, dropdown_font = ('Impact', 15))
+        self.grade_facility_combobox.place(anchor = 'center', relx = 0.5, rely = 0.67)
+        ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = "Add", text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = self.add_records_func).place(anchor = 'center', relx = 0.5, rely = 0.86)
+
+    #A method to carry out the backend process of error checking the page and inputting the values of the entry boxes into the database through a new record.
+    def add_records_func(self):
+        #Gets the user id from the database if it exists.
+        Id_db = cursor.execute('SELECT user_id FROM User WHERE user_id = ?', (self.user_id.get(),)).fetchall()
+        #Checks if all fields are filled out.
+        if self.user_id.get() == '' or self.first_name.get() == '' or self.last_name.get() == '' or self.class_facility.get() == '':
+            messagebox.showerror("Add Failed", "All fields must be filled out.")
+        #Checks if the user exists.
+        elif Id_db != []:
+            messagebox.showerror("Add Failed", "User already exists")
+        #Checks if a wrong occuptation is chosen.
+        #Example: S3465 and occupation chosen was a teacher.
+        elif (self.user_id.get()[0] == 'S' and not self.class_facility_bool.get()) or (self.user_id.get()[0] == 'T' and self.class_facility_bool.get()):
+            messagebox.showerror("Add Failed", "A student or teacher cannot have their code start with a T or S respectively.")
+        else:
+            #Checks if the admin is adding a student or teacher.
+            if self.class_facility_bool.get():
+                cursor.execute('INSERT INTO User (user_id, first_name, last_name, class_grade) VALUES (?, ?, ?, ?)', (self.user_id.get(), self.first_name.get(), self.last_name.get(), self.class_facility.get()))
+            else:
+                cursor.execute('INSERT INTO User (user_id, facility_id, first_name, last_name) VALUES (?, ?, ?, ?)', (self.user_id.get(), self.class_facility.get(), self.first_name.get(), self.last_name.get()))
+            conn.commit()
+            messagebox.showerror("Add Successful", f'Successfully added {self.first_name.get()} {self.last_name.get()}')
+
+    #A method to display different values in the combo box for a chosen role.
+    def student_or_teacher(self):
+        if self.class_facility_bool.get():
+            self.Label.configure(text = 'Select Class')
+            self.grade_facility_combobox.configure(values = self.classes, state = 'readonly')
+        else:
+            self.Label.configure(text = 'Select Facility')
+            self.grade_facility_combobox.configure(values = self.facilities, state = 'readonly')
+        
 #Facility Support
     def facility_support(self):
         self.clear_frame()
@@ -1094,9 +1183,13 @@ class ContentFrame(ctk.CTkFrame):
             widget.destroy()
 
 class SideBar(ctk.CTkFrame):
+    #A constructor method which defines itself, where the frame will be sitting on top off, the details of the user and their card, and the content frame class.
     def __init__(self, parent, login, page):
+        #A super constructor method which defines the frame's attributes from which this class inherits from.
         super().__init__(parent, width = 200, height = 600, border_color = "black", border_width = 2, corner_radius = 0, fg_color = '#F0F0F0')
+        #Image file load
         profile_icon = ctk.CTkImage(light_image = Image.open("Images/profile.png"), size = (70,70))
+        #Widgets
         ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, text = '', image = profile_icon, width = 100, height = 100, text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.account_edit_page).place(anchor = 'center', relx = 0.5, rely = 0.15)
         ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Tap In', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.card_tap_in_page).place(anchor = 'center', relx = 0.5, rely = 0.3)
         ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Analytics', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.analytics_page).place(anchor = 'center', relx = 0.5, rely = 0.6)
@@ -1104,9 +1197,8 @@ class SideBar(ctk.CTkFrame):
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Schedule Viewer', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.schedule_viewer).place(anchor = 'center', relx = 0.5, rely = 0.4)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approval_management).place(anchor = 'center', relx = 0.5, rely = 0.5)
             if login.user.user_id[0] == 'A':
-                ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'All Records', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.all_records_page).place(anchor = 'center', relx = 0.5, rely = 0.7)
-            else:
-                ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Facility Records', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.all_records_page).place(anchor = 'center', relx = 0.5, rely = 0.7)
+                ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'View Users', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.all_records_page).place(anchor = 'center', relx = 0.5, rely = 0.7)
+                ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Add Users', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.add_records_page).place(anchor = 'center', relx = 0.5, rely = 0.8)
         else:
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'Facility Support', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.facility_support).place(anchor = 'center', relx = 0.5, rely = 0.4)
             ctk.CTkButton(self, hover_color = '#d4d4d4', border_color = 'black', border_width = 2, width = 180, text = 'View Sent Approvals', text_color = 'black', fg_color = 'white', font = ('Impact', 20), command = page.approval_management).place(anchor = 'center', relx = 0.5, rely = 0.5)
@@ -1170,7 +1262,7 @@ class LoginPage(ctk.CTkFrame):
                                        WHERE user_id = ?;''', 
                                        (self.user_db[0][0],)).fetchall()
             #Creates two objects to store the values of the user and their card and shows an appropriate message welcoming the user.
-            self.card, self.user = Card(self.card_db[0][0], self.card_db[0][1]), User(self.user_db[0][0], self.user_db[0][2], self.user_db[0][3], self.user_db[0][4], self.user_db[0][5], self.user_db[0][6], self.user_db[0][1], self.user_db[0][7])
+            self.card, self.user = Card(self.card_db[0][0], self.card_db[0][1]), User(self.user_db[0][0], self.user_db[0][2], self.user_db[0][3], self.user_db[0][4], self.user_db[0][5], self.user_db[0][6], self.user_db[0][1])
             messagebox.showinfo('Login Successful', f'Welcome, {self.user_db[0][2]} {self.user_db[0][3]}')
             #Goes back to the main function with login having a value rather than none.
             main(self)
@@ -1258,39 +1350,46 @@ class RegisterPage(ctk.CTkFrame):
     def register_new_password_func(self):
         #This uses the 're' module to create a regular expression for the password checks.
         pattern = r"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]{8,}$"
-        #This checks if the user has logged in before or not by checking if they have a password.
-        if self.user_db[0][4] == None:
-            #This checks if all fields are not empty and shows an appropriate error message.
-            if self.id_entry.get() == '' or self.password_entry.get() == '' or self.confirm_password_entry.get() == '':
-                messagebox.showerror("Register Failed", "All fields must be filled out.")
-            #This checks if both the password and confirm password values the user inputed are the same and shows an appropriate error message.
-            elif self.password_entry.get() != self.confirm_password_entry.get():
-                messagebox.showerror("Register Failed", "Please make sure the passwords are the same.")
-            #This checks the password inputed against the password checks and shows an appropriate error message.
-            elif not re.match(pattern, self.password_entry.get()):
-                messagebox.showerror("Register Failed", "Password is not strong enough. Please include: 8 Characters minimum, A capital letter, A small letter, A number, A symbol.")
-            elif re.match(pattern, self.password_entry.get()):
-                #This retrieves a hashed password from the user's input and a random salt from a function.
-                hashed_password, salt = self.password_hash()
-                #This retrieves the next available card which is not taken by a user.
-                card = cursor.execute('SELECT card_id FROM Card WHERE user_id IS NULL LIMIT 1;').fetchall()
-                #This updates the card record that was retrieved with the new user who owns it.
-                cursor.execute('''UPDATE Card 
-                               SET user_id = ? 
-                               WHERE card_id = ?;''', 
-                               (self.id_entry.get(), card[0][0]))
-                #This stores the hashed password and salt that were created.
-                cursor.execute('''UPDATE User 
-                               SET hashed_password = ?, salt = ?
-                               WHERE user_id = ?;''', 
-                               (hashed_password, salt, self.id_entry.get()))
-                #This shows an appropriate message to let the user know the password has been set successfully.
-                messagebox.showinfo('Password Successfully Set', 'Please login with the new password.')
-                conn.commit()
-                #Takes you back to the login page.
-                LoginPage(window_frame)
+        user_db = cursor.execute('SELECT user_id, hashed_password FROM user WHERE user_id = ?', (self.id_entry.get(),)).fetchall()
+        if user_db != []:
+            #This checks if the user has logged in before or not by checking if they have a password.
+            if user_db[0][1] == None:
+                #This checks if all fields are not empty and shows an appropriate error message.
+                if self.id_entry.get() == '' or self.password_entry.get() == '' or self.confirm_password_entry.get() == '':
+                    messagebox.showerror("Register Failed", "All fields must be filled out.")
+                #This checks if both the password and confirm password values the user inputed are the same and shows an appropriate error message.
+                elif self.password_entry.get() != self.confirm_password_entry.get():
+                    messagebox.showerror("Register Failed", "Please make sure the passwords are the same.")
+                #This checks the password inputed against the password checks and shows an appropriate error message.
+                elif not re.match(pattern, self.password_entry.get()):
+                    messagebox.showerror("Register Failed", "Password is not strong enough. Please include: 8 Characters minimum, A capital letter, A small letter, A number, A symbol.")
+                elif re.match(pattern, self.password_entry.get()):
+                    #This retrieves a hashed password from the user's input and a random salt from a function.
+                    hashed_password, salt = self.password_hash()
+                    #This retrieves the next available card which is not taken by a user.
+                    card = cursor.execute('SELECT card_id FROM Card WHERE user_id IS NULL LIMIT 1;').fetchall()
+                    #This updates the card record that was retrieved with the new user who owns it.
+                    if card != []:
+                        cursor.execute('''UPDATE Card 
+                                    SET user_id = ? 
+                                    WHERE card_id = ?;''', 
+                                    (self.id_entry.get(), card[0][0]))
+                        #This stores the hashed password and salt that were created.
+                        cursor.execute('''UPDATE User 
+                                    SET hashed_password = ?, salt = ?
+                                    WHERE user_id = ?;''', 
+                                    (hashed_password, salt, self.id_entry.get()))
+                        #This shows an appropriate message to let the user know the password has been set successfully.
+                        messagebox.showinfo('Password Successfully Set', 'Please login with the new password.')
+                        conn.commit()
+                        #Takes you back to the login page.
+                        LoginPage(window_frame)
+                    else:
+                        messagebox.showerror("Password Set Failed", "There are no available cards at this time, please check back again in some time.")
+            else:
+                messagebox.showerror("Password Set Failed", "Accounts password has already been changed please change from user settings.")
         else:
-            messagebox.showerror("Password Set Failed", "Accounts password has already been changed please change from user settings.")
+            messagebox.showerror("Password Set Failed", "User doesn't exist.")
     
     #A function to hash passwords
     def password_hash(self):
