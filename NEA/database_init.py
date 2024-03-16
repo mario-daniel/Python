@@ -43,7 +43,6 @@ cursor.execute('''
         hashed_password VARCHAR(100),
         salt VARCHAR(100),
         class_grade VARCHAR(3),
-        login_count INTEGER,
         PRIMARY KEY (user_id),
         FOREIGN KEY (facility_id) REFERENCES Facility(facility_id)
     );
@@ -150,13 +149,15 @@ salt = secrets.token_bytes(16)
 salted_password = 'Admin@2024'.encode('utf-8') + salt
 hashed_password = hashlib.sha256(salted_password).hexdigest()
 
-cursor.execute('''INSERT INTO USER (user_id, first_name, last_name, hashed_password, salt, login_count) 
-               VALUES ("A", "Admin", '', ?, ?, 10000);''', 
+cursor.execute('''INSERT INTO USER (user_id, first_name, last_name, hashed_password, salt) 
+               VALUES ("A", "Admin", '', ?, ?);''', 
                (hashed_password, salt))
-cursor.execute('''INSERT INTO USER (user_id, facility_id, first_name, last_name, login_count) 
-               VALUES ("T3465", 1, "Mario", 'Daniel', 0);''')
-cursor.execute('''INSERT INTO USER (user_id, first_name, last_name, class_grade, login_count) 
-               VALUES ("S3465", "Mario", 'Daniel', '13B', 0);''')
+cursor.execute('''INSERT INTO USER (user_id, facility_id, first_name, last_name) 
+               VALUES ("T3465", 1, "Mario", 'Daniel');''')
+cursor.execute('''INSERT INTO USER (user_id, first_name, last_name, class_grade) 
+               VALUES ("S3465", "Mario", 'Daniel', '13B');''')
+cursor.execute('''INSERT INTO USER (user_id, first_name, last_name, class_grade) 
+               VALUES ("S4073", "Roaa", 'Hewit', '12B');''')
 
 import random
 import string
