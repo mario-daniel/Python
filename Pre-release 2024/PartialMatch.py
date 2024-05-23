@@ -109,14 +109,16 @@ class Puzzle():
                 AmountToAddToScore = self.CheckforMatchWithPattern(Row, Column)
                 if AmountToAddToScore > 0:
                     self.__Score += AmountToAddToScore
+#----------------------------------------------------------------------------------------------------------------------
             self.__SymbolsLeft = self.__GetSpaceLeftOnGrid()
+#----------------------------------------------------------------------------------------------------------------------
             if self.__SymbolsLeft == 0:
                 Finished = True
         print()
         self.DisplayPuzzle()
         print()
         return self.__Score
-
+#----------------------------------------------------------------------------------------------------------------------
     def __GetSpaceLeftOnGrid(self):
         self.__LowestAmountOfEmptySpaces = 10
         for Column in range(1, self.__GridSize):
@@ -153,7 +155,7 @@ class Puzzle():
                             self.__LowestAmountOfEmptySpaces = 9 - Count
                 except:
                     pass
-
+#----------------------------------------------------------------------------------------------------------------------
     def __GetCell(self, Row, Column):
         Index = (self.__GridSize - Row) * self.__GridSize + Column - 1
         if Index >= 0:
@@ -238,9 +240,10 @@ class Pattern():
 
     def GetPatternSequence(self):
       return self.__PatternSequence
-    
+#----------------------------------------------------------------------------------------------------------------------
     def GetSymbol(self):
         return self.__Symbol
+#----------------------------------------------------------------------------------------------------------------------
 
 class Cell():
     def __init__(self):
