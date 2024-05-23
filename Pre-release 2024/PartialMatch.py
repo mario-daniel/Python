@@ -123,14 +123,14 @@ class Puzzle():
         self.__LowestAmountOfEmptySpaces = 10
         for Column in range(1, self.__GridSize):
             for Row in range(self.__GridSize, 1, -1):
-                self.GetPattern(Row, Column)
+                self.__CheckforPartialMatchWithPattern(Row, Column)
         if self.__SymbolsLeft < self.__LowestAmountOfEmptySpaces:
             print('You do not have an enough amount of Symbols Left.')
             self.__Score -= self.__SymbolsLeft
             self.__SymbolsLeft = 0
             return self.__SymbolsLeft
 
-    def GetPattern(self, Row, Column):
+    def __CheckforPartialMatchWithPattern(self, Row, Column):
         for StartRow in range(Row + 2, Row - 1, -1):
             for StartColumn in range(Column - 2, Column + 1):
                 try:
