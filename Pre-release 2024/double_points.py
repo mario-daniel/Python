@@ -41,13 +41,11 @@ class Puzzle():
                     C = BlockedCell()
                 self.__Grid.append(C)
 #----------------------------------------------------------------------------------------------------------------------
-            for Count in range(0, 5):
-                Index = random.randint(1, 63)
-                C = self.__Grid[Index]
-                while C.GetSymbol() != '-':
-                    Index = random.randint(1, 63)
-                    C = self.__Grid[Index]
-                self.__Grid[Index] = DoublePointCell()
+            for i in range(6):
+                RandomGridPosition = random.randint(1, len(self.__Grid))
+                while not self.__Grid[RandomGridPosition].IsEmpty():
+                    RandomGridPosition = random.randint(1, len(self.__Grid))
+                self.__Grid[RandomGridPosition] = DoublePointCell()
 #----------------------------------------------------------------------------------------------------------------------
             self.__AllowedPatterns = []
             self.__AllowedSymbols = []
@@ -156,10 +154,10 @@ class Puzzle():
                     Pattern.append(self.__GetCell(StartRow - 2, StartColumn + 1))
                     Pattern.append(self.__GetCell(StartRow - 2, StartColumn))
                     Pattern.append(self.__GetCell(StartRow - 1, StartColumn))
-                    Pattern.append(self.__GetCell(StartRow - 1, StartColumn))
+                    Pattern.append(self.__GetCell(StartRow - 1, StartColumn + 1))
 #----------------------------------------------------------------------------------------------------------------------
                     for P in self.__AllowedPatterns:
-                        CurrentSymbol = self.__GetCell(Row, Column).GetSymbol()
+                        CurrentSymbol = self.__GetCell(Row, Column).GetSymbol()                        
                         if P.MatchesPattern(PatternString, CurrentSymbol):
                             self.__GetCell(StartRow, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
                             self.__GetCell(StartRow, StartColumn + 1).AddToNotAllowedSymbols(CurrentSymbol)
@@ -170,15 +168,14 @@ class Puzzle():
                             self.__GetCell(StartRow - 2, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
                             self.__GetCell(StartRow - 1, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
                             self.__GetCell(StartRow - 1, StartColumn + 1).AddToNotAllowedSymbols(CurrentSymbol)
-#----------------------------------------------------------------------------------------------------------------------                            
-                            for cell in Pattern:
-                                try:
-                                    if cell.IsDouble():
-                                        self.__Points = 20
-                                        break
-                                except:
-                                        self.__Points = 10
-                            return self.__Points
+#----------------------------------------------------------------------------------------------------------------------
+                            for C in Pattern:
+                                if C.IsDouble():
+                                    return 20
+                                elif len(Pattern) != 0:
+                                    Pattern.remove(C)
+                                else:
+                                    return 10
 #----------------------------------------------------------------------------------------------------------------------
                 except:
                     pass
@@ -247,7 +244,10 @@ class Cell():
             return True
         else:
             return False
-
+#----------------------------------------------------------------------------------------------------------------------        
+    def IsDouble(self):
+        return False
+#----------------------------------------------------------------------------------------------------------------------
     def ChangeSymbolInCell(self, NewSymbol):
         self._Symbol = NewSymbol
 
@@ -266,7 +266,7 @@ class Cell():
 class DoublePointCell(Cell):
     def __init__(self):
         super(DoublePointCell, self).__init__()
-        self._Symbol = 'D'
+        self._Symbol = "D"
 
     def IsDouble(self):
         return True
