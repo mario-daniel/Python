@@ -83,11 +83,21 @@ class Puzzle():
     def AttemptPuzzle(self):
         Finished = False
 #----------------------------------------------------------------------------------------------------------------------
-        SwampTrigger = False
-        TurnsTillSwamp = 0
+        IsSwampTrigger = False
+        SwampOccur = False
 #----------------------------------------------------------------------------------------------------------------------
         while not Finished:
             self.DisplayPuzzle()
+#----------------------------------------------------------------------------------------------------------------------
+            ChanceOfTrigger = random.randint(1, 4)
+            if ChanceOfTrigger == 1 and IsSwampTrigger == False and SwampOccur == False:
+                NumberOfTurnsBeforeSwamp = random.randint(2, 4)
+                IsSwampTrigger = True
+                print('A swamp event has been triggered!')
+                print(f'\nThere are {NumberOfTurnsBeforeSwamp} turns left before swamp event!')
+            elif IsSwampTrigger == False:
+                NumberOfTurnsBeforeSwamp = 0
+#----------------------------------------------------------------------------------------------------------------------
             print("Current score: " + str(self.__Score))
             Row = -1
             Valid = False
@@ -114,19 +124,14 @@ class Puzzle():
                 if AmountToAddToScore > 0:
                     self.__Score += AmountToAddToScore
 #----------------------------------------------------------------------------------------------------------------------
-            if random.randint(1, 4) == 1 and SwampTrigger == False:
-                TurnsTillSwamp = random.randint(2, 4)
-                SwampTrigger = True
-                print('\nSwamp Triggered!\n')
-                print(f'\n{TurnsTillSwamp} turns till swamp event.')
-            elif SwampTrigger == True:
-                TurnsTillSwamp -= 1
-                if TurnsTillSwamp == 0:
+            if SwampOccur == False:
+                if IsSwampTrigger == True and NumberOfTurnsBeforeSwamp != 0:
+                    NumberOfTurnsBeforeSwamp -= 1
+                    if NumberOfTurnsBeforeSwamp != 0:
+                        print(f'\nThere are {NumberOfTurnsBeforeSwamp} turns left before swamp event!')
+                if IsSwampTrigger == True and NumberOfTurnsBeforeSwamp == 0:
                     self.__SwampThisCell()
-                    SwampTrigger = False
-                    print('\nSwamp Occur!\n')
-                else:
-                    print(f'\n{TurnsTillSwamp} turns till swamp event.')
+                    SwampOccur = True
 #----------------------------------------------------------------------------------------------------------------------
             if self.__SymbolsLeft == 0:
                 Finished = True
@@ -134,16 +139,18 @@ class Puzzle():
         self.DisplayPuzzle()
         print()
         return self.__Score
-#----------------------------------------------------------------------------------------------------------------------
+#----------------------------------------------------------------------------------------------------------------------    
     def __SwampThisCell(self):
-        NumberOfSwamps = random.randint(1, 4)
-        for Swamp in range(1, NumberOfSwamps + 1):
-            Index = random.randint(0, len(self.__Grid) - 1)
-            while not self.__Grid[Index].GetSymbol() == '-':
-                Index = random.randint(0, len(self.__Grid) - 1)
-            C = BlockedCell()
-            C.UpdateCell()
-            self.__Grid[Index] = C
+        NumberOfSwampCells = random.randint(1, 4)
+        RandomPosition = random.randint(1, len(self.__Grid) - 1)
+        for i in range(NumberOfSwampCells):
+            while True:
+                if self.__Grid[RandomPosition].IsEmpty():
+                    self.__Grid[RandomPosition] = BlockedCell()
+                    self.__Grid[RandomPosition].UpdateCell()
+                    break
+                else:
+                    RandomPosition = random.randint(1, len(self.__Grid) - 1)
 #----------------------------------------------------------------------------------------------------------------------
     def __GetCell(self, Row, Column):
         Index = (self.__GridSize - Row) * self.__GridSize + Column - 1
@@ -269,9 +276,9 @@ class BlockedCell(Cell):
 
     def CheckSymbolAllowed(self, SymbolToCheck):
         return False
-#----------------------------------------------------------------------------------------------------------------------    
+#----------------------------------------------------------------------------------------------------------------------         
     def UpdateCell(self):
-        self._Symbol = '!'
+        self._Symbol = "!"
 #----------------------------------------------------------------------------------------------------------------------
 if __name__ == "__main__":
     Main()
