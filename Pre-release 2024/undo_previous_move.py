@@ -90,11 +90,14 @@ class Puzzle():
         Finished = False
         while not Finished:
             self.DisplayPuzzle()
-            print("Current score: " + str(self.__Score))
 #----------------------------------------------------------------------------------------------------------------------
-            UndoUserInput = input('Would you like to undo your previous move? (y/N): ').lower()
-            if UndoUserInput == 'y':
-                self.__UndoPreviousMove()
+            print("Current score: " + str(self.__Score))
+            print(f"Undo Moves Available: {len(self.__PreviousMoves)}")
+            if self.__PreviousMoves != []:
+                UndoInput = input("\nDo you wish to undo your previous move? (y/N): ")
+                if UndoInput == "y":
+                    self.__UndoPreviousMove()
+                    continue
 #----------------------------------------------------------------------------------------------------------------------
             Row = -1
             Valid = False
@@ -115,10 +118,8 @@ class Puzzle():
             Symbol = self.__GetSymbolFromUser()
             self.__SymbolsLeft -= 1
             CurrentCell = self.__GetCell(Row, Column)
+            self.__AddToPreviousMove(Row, Column, CurrentCell)
             if CurrentCell.CheckSymbolAllowed(Symbol):
-#----------------------------------------------------------------------------------------------------------------------
-                self.__StorePreviousMove(Row, Column, CurrentCell.GetSymbol())
-#----------------------------------------------------------------------------------------------------------------------
                 CurrentCell.ChangeSymbolInCell(Symbol)
                 AmountToAddToScore = self.CheckforMatchWithPattern(Row, Column)
                 if AmountToAddToScore > 0:
@@ -130,19 +131,22 @@ class Puzzle():
         print()
         return self.__Score
 #----------------------------------------------------------------------------------------------------------------------    
-    def __StorePreviousMove(self, Row, Column, Symbol):
+    def __AddToPreviousMove(self, Row, Column, CurrentCell):
         Index = (self.__GridSize - Row) * self.__GridSize + Column - 1
-        PreviousCell = PreviousMove(Index, Symbol)
+        Symbol = CurrentCell.GetSymbol()
+        SymbolsNotAllowed = CurrentCell.GetSymbolsNotAllowed()
+        PreviousCell = PreviousMove(Index, Symbol, SymbolsNotAllowed)
         self.__PreviousMoves.append(PreviousCell)
-    
+
     def __UndoPreviousMove(self):
         if self.__PreviousMoves != []:
             PreviousCell = self.__PreviousMoves[-1]
-            self.__Grid[PreviousCell.Index].ChangeSymbolInCell(PreviousCell.GetSymbol())
-            del self.__PreviousMoves[-1]
-            self.AttemptPuzzle()
-        else:
-            print('No moves have been played yet.')
+            Index = PreviousCell.GetPreviousIndex()
+            Symbol = PreviousCell.GetPreviousSymbol()
+            SymbolsNotAllowed = PreviousCell.GetPreviousSymbolsNotAllowed()
+            self.__Grid[Index].ChangeSymbolInCell(Symbol)
+            self.__Grid[Index].ChangeNotAllowedSymbols(SymbolsNotAllowed)
+            self.__PreviousMoves.pop()
 #----------------------------------------------------------------------------------------------------------------------
     def __GetCell(self, Row, Column):
         Index = (self.__GridSize - Row) * self.__GridSize + Column - 1
@@ -258,14 +262,30 @@ class Cell():
     def AddToNotAllowedSymbols(self, SymbolToAdd):
         self.__SymbolsNotAllowed.append(SymbolToAdd)
 
+    def GetSymbolsNotAllowed(self):
+        return self.__SymbolsNotAllowed
+#----------------------------------------------------------------------------------------------------------------------
+    def ChangeNotAllowedSymbols(self, NewNotAllowedSymbols):
+        self.__SymbolsNotAllowed = NewNotAllowedSymbols
+#----------------------------------------------------------------------------------------------------------------------
     def UpdateCell(self):
         pass
 #----------------------------------------------------------------------------------------------------------------------
 class PreviousMove(Cell):
-    def __init__(self, Index, Symbol):
+    def __init__(self, Index, Symbol, NotAllowedSymbols):
         super(PreviousMove, self).__init__()
-        self._Symbol = Symbol
-        self.Index = Index
+        self.__PreviousIndex = Index
+        self.__PreviousSymbol = Symbol
+        self.__PreviousNotAllowedSymbols = NotAllowedSymbols.copy()
+
+    def GetPreviousIndex(self):
+        return self.__PreviousIndex
+    
+    def GetPreviousSymbol(self):
+        return self.__PreviousSymbol
+    
+    def GetPreviousSymbolsNotAllowed(self):
+        return self.__PreviousNotAllowedSymbols
 #----------------------------------------------------------------------------------------------------------------------
 class BlockedCell(Cell):
     def __init__(self):
