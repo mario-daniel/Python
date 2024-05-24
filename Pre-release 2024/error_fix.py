@@ -29,6 +29,9 @@ class Puzzle():
             self.__AllowedPatterns = []
             self.__AllowedSymbols = []
             self.__LoadPuzzle(args[0])
+#----------------------------------------------------------------------------------------------------------------------
+            self.__LoadPuzzleIsPatternSweep()
+#----------------------------------------------------------------------------------------------------------------------
         else:
             self.__Score = 0
             self.__SymbolsLeft = args[1]
@@ -86,7 +89,7 @@ class Puzzle():
             self.DisplayPuzzle()
             print("Current score: " + str(self.__Score))
 #----------------------------------------------------------------------------------------------------------------------
-            print(f'Symbols left: {self.__SymbolsLeft}')
+            print(f"Symbols Left: {self.__SymbolsLeft}")
 #----------------------------------------------------------------------------------------------------------------------
             Row = -1
             Valid = False
@@ -106,26 +109,24 @@ class Puzzle():
                     pass
             Symbol = self.__GetSymbolFromUser()
 #----------------------------------------------------------------------------------------------------------------------
-            if Row > self.__GridSize or Row < 0 or Column > self.__GridSize or Column < 0:
-                print('Choice is out of bounds.')
+            if Row == self.__GridSize + 1 or Column == self.__GridSize + 1:
+                print('Out of range')
                 continue
 #----------------------------------------------------------------------------------------------------------------------
+            self.__SymbolsLeft -= 1
             CurrentCell = self.__GetCell(Row, Column)
 #----------------------------------------------------------------------------------------------------------------------
-            if CurrentCell.CheckSymbolAllowed(Symbol) and CurrentCell.CheckSymbolStatus():
-                self.__SymbolsLeft -= 1
-#----------------------------------------------------------------------------------------------------------------------
+            if CurrentCell.CheckSymbolAllowed(Symbol) and not CurrentCell.IsPattern():
                 CurrentCell.ChangeSymbolInCell(Symbol)
                 AmountToAddToScore = self.CheckforMatchWithPattern(Row, Column)
                 if AmountToAddToScore > 0:
                     self.__Score += AmountToAddToScore
-#----------------------------------------------------------------------------------------------------------------------
-            elif not CurrentCell.CheckSymbolStatus():
-                print('Cannot change a symbol in a matched pattern.')
-                continue
-            elif not CurrentCell.CheckSymbolAllowed(Symbol):
-                print('Cannot enter the same symbol of the symbol of the 3x3 area matched pattern.')
-                continue
+            elif CurrentCell.IsPattern():
+                self.__SymbolsLeft += 1
+                print('Cannot replace a cell which is already part of a pattern.')
+            else:
+                self.__SymbolsLeft += 1
+                print('Cannot place same symbol in the same 3x3 area where pattern is matched.')
 #----------------------------------------------------------------------------------------------------------------------
             if self.__SymbolsLeft == 0:
                 Finished = True
@@ -133,7 +134,12 @@ class Puzzle():
         self.DisplayPuzzle()
         print()
         return self.__Score
-
+#----------------------------------------------------------------------------------------------------------------------
+    def __LoadPuzzleIsPatternSweep(self):
+        for C in self.__Grid:
+            if not C.CheckSymbolAllowed(C.GetSymbol()):
+                C.ChangePatternStatus(True)
+#----------------------------------------------------------------------------------------------------------------------
     def __GetCell(self, Row, Column):
         Index = (self.__GridSize - Row) * self.__GridSize + Column - 1
         if Index >= 0:
@@ -155,6 +161,18 @@ class Puzzle():
                     PatternString += self.__GetCell(StartRow - 2, StartColumn).GetSymbol()
                     PatternString += self.__GetCell(StartRow - 1, StartColumn).GetSymbol()
                     PatternString += self.__GetCell(StartRow - 1, StartColumn + 1).GetSymbol()
+#----------------------------------------------------------------------------------------------------------------------
+                    Pattern = []
+                    Pattern.append(self.__GetCell(StartRow, StartColumn))
+                    Pattern.append(self.__GetCell(StartRow, StartColumn + 1))
+                    Pattern.append(self.__GetCell(StartRow, StartColumn + 2))
+                    Pattern.append(self.__GetCell(StartRow - 1, StartColumn + 2))
+                    Pattern.append(self.__GetCell(StartRow - 2, StartColumn + 2))
+                    Pattern.append(self.__GetCell(StartRow - 2, StartColumn + 1))
+                    Pattern.append(self.__GetCell(StartRow - 2, StartColumn))
+                    Pattern.append(self.__GetCell(StartRow - 1, StartColumn))
+                    Pattern.append(self.__GetCell(StartRow - 1, StartColumn + 1))
+#----------------------------------------------------------------------------------------------------------------------
                     for P in self.__AllowedPatterns:
                         CurrentSymbol = self.__GetCell(Row, Column).GetSymbol()
                         if P.MatchesPattern(PatternString, CurrentSymbol):
@@ -167,6 +185,11 @@ class Puzzle():
                             self.__GetCell(StartRow - 2, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
                             self.__GetCell(StartRow - 1, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
                             self.__GetCell(StartRow - 1, StartColumn + 1).AddToNotAllowedSymbols(CurrentSymbol)
+#----------------------------------------------------------------------------------------------------------------------
+                            for C in Pattern:
+                                if not C.IsEmpty():
+                                    C.ChangePatternStatus(True)
+#----------------------------------------------------------------------------------------------------------------------
                             return 10
                 except:
                     pass
@@ -223,16 +246,8 @@ class Cell():
     def __init__(self):
         self._Symbol = ""
         self.__SymbolsNotAllowed = []
-#----------------------------------------------------------------------------------------------------------------------
-        self.__CanChangeSymbol = True
-#----------------------------------------------------------------------------------------------------------------------
-#----------------------------------------------------------------------------------------------------------------------
-    def __ChangeSymbolStatus(self):
-        self.__CanChangeSymbol = False
+        self.__IsPattern = False
 
-    def CheckSymbolStatus(self):
-        return self.__CanChangeSymbol
-#----------------------------------------------------------------------------------------------------------------------
     def GetSymbol(self):
         if self.IsEmpty():
           return "-"
@@ -244,6 +259,12 @@ class Cell():
             return True
         else:
             return False
+        
+    def IsPattern(self):
+        return self.__IsPattern
+    
+    def ChangePatternStatus(self, Status):
+        self.__IsPattern = Status
 
     def ChangeSymbolInCell(self, NewSymbol):
         self._Symbol = NewSymbol
@@ -255,9 +276,6 @@ class Cell():
         return True
 
     def AddToNotAllowedSymbols(self, SymbolToAdd):
-#----------------------------------------------------------------------------------------------------------------------
-        self.__ChangeSymbolStatus()
-#----------------------------------------------------------------------------------------------------------------------
         self.__SymbolsNotAllowed.append(SymbolToAdd)
 
     def UpdateCell(self):
