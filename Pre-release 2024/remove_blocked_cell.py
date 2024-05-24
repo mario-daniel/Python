@@ -23,19 +23,25 @@ class Puzzle():
     def __init__(self, *args):
         if len(args) == 1:
             self.__Score = 0
-            self.__Lever = [0, 0]
             self.__SymbolsLeft = 0
             self.__GridSize = 0
             self.__Grid = []
             self.__AllowedPatterns = []
             self.__AllowedSymbols = []
+#----------------------------------------------------------------------------------------------------------------------
+            self.__LeverUsed = False
+            self.__Lever = 0
+#----------------------------------------------------------------------------------------------------------------------
             self.__LoadPuzzle(args[0])
         else:
-            self.__Score = [0, 0]
-            self.__Lever = 0
+            self.__Score = 0
             self.__SymbolsLeft = args[1]
             self.__GridSize = args[0]
             self.__Grid = []
+#----------------------------------------------------------------------------------------------------------------------
+            self.__LeverUsed = False
+            self.__Lever = 0
+#----------------------------------------------------------------------------------------------------------------------
             for Count in range(1, self.__GridSize * self.__GridSize + 1):
                 if random.randrange(1, 101) < 90:
                     C = Cell()
@@ -88,64 +94,49 @@ class Puzzle():
             self.DisplayPuzzle()
             print("Current score: " + str(self.__Score))
 #----------------------------------------------------------------------------------------------------------------------
-            if self.__Lever[0] == 1:
-                print('You have a lever to remove a blocked cell')
-                Row = -1
-                Valid = False
-                while not Valid:
-                    try:
-                        Row = int(input("Enter row number of a blocked cell you would like to remove: "))
-                        Valid = True
-                    except:
-                        pass
-                Column = -1
-                Valid = False
-                while not Valid:
-                    try:
-                        Column = int(input("Enter column number of a blocked cell you would like to remove: "))
-                        Valid = True
-                    except:
-                        pass
-                self.__RemoveBlockedCell(Row, Column)
-#----------------------------------------------------------------------------------------------------------------------
+            if self.__LeverUsed == False and self.__Lever == 1:
+                UserInput = input('You have a lever. Would you like to use it? (y/N):')
             else:
-                Row = -1
-                Valid = False
-                while not Valid:
-                    try:
-                        Row = int(input("Enter row number: "))
-                        Valid = True
-                    except:
-                        pass
-                Column = -1
-                Valid = False
-                while not Valid:
-                    try:
-                        Column = int(input("Enter column number: "))
-                        Valid = True
-                    except:
-                        pass
-                Symbol = self.__GetSymbolFromUser()
-                self.__SymbolsLeft -= 1
+                UserInput = 'N'
+#----------------------------------------------------------------------------------------------------------------------
+            Row = -1
+            Valid = False
+            while not Valid:
+                try:
+                    Row = int(input("Enter row number: "))
+                    Valid = True
+                except:
+                    pass
+            Column = -1
+            Valid = False
+            while not Valid:
+                try:
+                    Column = int(input("Enter column number: "))
+                    Valid = True
+                except:
+                    pass
+#----------------------------------------------------------------------------------------------------------------------
+            if UserInput == "y":
                 CurrentCell = self.__GetCell(Row, Column)
-                if CurrentCell.CheckSymbolAllowed(Symbol):
-                    CurrentCell.ChangeSymbolInCell(Symbol)
-                    AmountToAddToScore = self.CheckforMatchWithPattern(Row, Column)
-                    if AmountToAddToScore > 0:
-                        self.__Score += AmountToAddToScore
-                if self.__SymbolsLeft == 0:
-                    Finished = True
+                self.__Grid[self.__Grid.index(CurrentCell)] = Cell()
+                self.__LeverUsed = True
+                continue
+#----------------------------------------------------------------------------------------------------------------------
+            Symbol = self.__GetSymbolFromUser()
+            self.__SymbolsLeft -= 1
+            CurrentCell = self.__GetCell(Row, Column)
+            if CurrentCell.CheckSymbolAllowed(Symbol):
+                CurrentCell.ChangeSymbolInCell(Symbol)
+                AmountToAddToScore = self.CheckforMatchWithPattern(Row, Column)
+                if AmountToAddToScore > 0:
+                    self.__Score += AmountToAddToScore
+            if self.__SymbolsLeft == 0:
+                Finished = True
         print()
         self.DisplayPuzzle()
         print()
-        return self.__Score
-#----------------------------------------------------------------------------------------------------------------------
-    def __RemoveBlockedCell(self, Row, Column):
-        C = self.__GetCell(Row, Column)
-        self.__Grid[self.__Grid.index(C)] = Cell()
-        self.__Lever[0] -= 1
-        self.__Lever[1] += 1
-#----------------------------------------------------------------------------------------------------------------------
+        return self.__Score  
+
     def __GetCell(self, Row, Column):
         Index = (self.__GridSize - Row) * self.__GridSize + Column - 1
         if Index >= 0:
@@ -180,10 +171,10 @@ class Puzzle():
                             self.__GetCell(StartRow - 1, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
                             self.__GetCell(StartRow - 1, StartColumn + 1).AddToNotAllowedSymbols(CurrentSymbol)
 #----------------------------------------------------------------------------------------------------------------------
-                            if self.__Lever[0] == 0 and self.__Lever[1] == 0:
-                                self.__Lever += 1
-                            return 10
+                            if self.__LeverUsed == False:
+                                self.__Lever = 1
 #----------------------------------------------------------------------------------------------------------------------
+                            return 10
                 except:
                     pass
         return 0
