@@ -91,10 +91,8 @@ class Puzzle():
         while not Finished:
             self.DisplayPuzzle()
             print("Current score: " + str(self.__Score))
-#----------------------------------------------------------------------------------------------------------------------
             for P in self.__AllowedPatterns:
                 P.OutputPatternCount()
-#----------------------------------------------------------------------------------------------------------------------
             Row = -1
             Valid = False
             while not Valid:
@@ -150,7 +148,7 @@ class Puzzle():
                     for P in self.__AllowedPatterns:
                         CurrentSymbol = self.__GetCell(Row, Column).GetSymbol()
 #----------------------------------------------------------------------------------------------------------------------
-                        if P.MatchesPattern(PatternString, CurrentSymbol) and P.UpdatePatternCount():
+                        if P.MatchesPattern(PatternString, CurrentSymbol) and P.GetPatternCount() != 0:
 #----------------------------------------------------------------------------------------------------------------------
                             self.__GetCell(StartRow, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
                             self.__GetCell(StartRow, StartColumn + 1).AddToNotAllowedSymbols(CurrentSymbol)
@@ -161,6 +159,9 @@ class Puzzle():
                             self.__GetCell(StartRow - 2, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
                             self.__GetCell(StartRow - 1, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
                             self.__GetCell(StartRow - 1, StartColumn + 1).AddToNotAllowedSymbols(CurrentSymbol)
+#----------------------------------------------------------------------------------------------------------------------
+                            P.DecrementPatternCount()
+#----------------------------------------------------------------------------------------------------------------------
                             return 10
                 except:
                     pass
@@ -195,12 +196,22 @@ class Puzzle():
                 print(self.__CreateHorizontalLine())
 
 class Pattern():
-#----------------------------------------------------------------------------------------------------------------------
     def __init__(self, SymbolToUse, PatternString, PatternCount):
         self.__Symbol = SymbolToUse
         self.__PatternSequence = PatternString
-        self.__PatternCount = PatternCount
 #----------------------------------------------------------------------------------------------------------------------
+        self.__PatternCount = PatternCount
+
+    def GetPatternCount(self):
+        return self.__PatternCount
+
+    def OutputPatternCount(self):
+        print(f'{self.__Symbol} : {self.__PatternCount}')
+    
+    def DecrementPatternCount(self):
+        self.__PatternCount -= 1
+#----------------------------------------------------------------------------------------------------------------------
+
     def MatchesPattern(self, PatternString, SymbolPlaced):
         if SymbolPlaced != self.__Symbol:
             return False
@@ -214,18 +225,7 @@ class Pattern():
 
     def GetPatternSequence(self):
       return self.__PatternSequence
-#----------------------------------------------------------------------------------------------------------------------    
-    def UpdatePatternCount(self):
-        if self.__PatternCount == 0:
-            print(f'No more {self.__Symbol} Patterns available to use')
-            return False
-        else:
-            self.__PatternCount -= 1
-            return True
 
-    def OutputPatternCount(self):
-        print(f'{self.__Symbol}: {self.__PatternCount}')
-#----------------------------------------------------------------------------------------------------------------------
 class Cell():
     def __init__(self):
         self._Symbol = ""
@@ -236,7 +236,7 @@ class Cell():
           return "-"
         else:
           return self._Symbol
-    
+
     def IsEmpty(self):
         if len(self._Symbol) == 0:
             return True
