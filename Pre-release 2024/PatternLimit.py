@@ -91,8 +91,10 @@ class Puzzle():
         while not Finished:
             self.DisplayPuzzle()
             print("Current score: " + str(self.__Score))
+#----------------------------------------------------------------------------------------------------------------------
             for P in self.__AllowedPatterns:
                 P.OutputPatternCount()
+#----------------------------------------------------------------------------------------------------------------------
             Row = -1
             Valid = False
             while not Valid:
