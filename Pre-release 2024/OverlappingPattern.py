@@ -147,30 +147,27 @@ class Puzzle():
                     Pattern.append(self.__GetCell(StartRow - 2, StartColumn + 1))
                     Pattern.append(self.__GetCell(StartRow - 2, StartColumn))
                     Pattern.append(self.__GetCell(StartRow - 1, StartColumn))
-                    Pattern.append(self.__GetCell(StartRow - 1, StartColumn))
+                    Pattern.append(self.__GetCell(StartRow - 1, StartColumn + 1))
 #----------------------------------------------------------------------------------------------------------------------
                     for P in self.__AllowedPatterns:
                         CurrentSymbol = self.__GetCell(Row, Column).GetSymbol()
+                        if P.MatchesPattern(PatternString, CurrentSymbol):
 #----------------------------------------------------------------------------------------------------------------------
-                        for cell in Pattern:
-                            if cell.CheckSymbolAllowed(CurrentSymbol) or cell.GetSymbol() == '@':
+                            for C in Pattern:
+                                if not C.CheckSymbolAllowed(CurrentSymbol):
+                                    print('\nOverlapping Pattern')
+                                    return 0
 #----------------------------------------------------------------------------------------------------------------------
-                                if P.MatchesPattern(PatternString, CurrentSymbol):
-                                    self.__GetCell(StartRow, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
-                                    self.__GetCell(StartRow, StartColumn + 1).AddToNotAllowedSymbols(CurrentSymbol)
-                                    self.__GetCell(StartRow, StartColumn + 2).AddToNotAllowedSymbols(CurrentSymbol)
-                                    self.__GetCell(StartRow - 1, StartColumn + 2).AddToNotAllowedSymbols(CurrentSymbol)
-                                    self.__GetCell(StartRow - 2, StartColumn + 2).AddToNotAllowedSymbols(CurrentSymbol)
-                                    self.__GetCell(StartRow - 2, StartColumn + 1).AddToNotAllowedSymbols(CurrentSymbol)
-                                    self.__GetCell(StartRow - 2, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
-                                    self.__GetCell(StartRow - 1, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
-                                    self.__GetCell(StartRow - 1, StartColumn + 1).AddToNotAllowedSymbols(CurrentSymbol)
-                                    return 10
-#----------------------------------------------------------------------------------------------------------------------
-                            else:
-                                print('Overlapping pattern!')
-                                return 0
-#----------------------------------------------------------------------------------------------------------------------
+                            self.__GetCell(StartRow, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
+                            self.__GetCell(StartRow, StartColumn + 1).AddToNotAllowedSymbols(CurrentSymbol)
+                            self.__GetCell(StartRow, StartColumn + 2).AddToNotAllowedSymbols(CurrentSymbol)
+                            self.__GetCell(StartRow - 1, StartColumn + 2).AddToNotAllowedSymbols(CurrentSymbol)
+                            self.__GetCell(StartRow - 2, StartColumn + 2).AddToNotAllowedSymbols(CurrentSymbol)
+                            self.__GetCell(StartRow - 2, StartColumn + 1).AddToNotAllowedSymbols(CurrentSymbol)
+                            self.__GetCell(StartRow - 2, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
+                            self.__GetCell(StartRow - 1, StartColumn).AddToNotAllowedSymbols(CurrentSymbol)
+                            self.__GetCell(StartRow - 1, StartColumn + 1).AddToNotAllowedSymbols(CurrentSymbol)
+                            return 10
                 except:
                     pass
         return 0
