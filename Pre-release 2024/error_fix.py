@@ -253,16 +253,16 @@ class Cell():
           return "-"
         else:
           return self._Symbol
-    
+
     def IsEmpty(self):
         if len(self._Symbol) == 0:
             return True
         else:
             return False
-        
+#----------------------------------------------------------------------------------------------------------------------      
     def IsPattern(self):
         return self.__IsPattern
-    
+#----------------------------------------------------------------------------------------------------------------------  
     def ChangePatternStatus(self, Status):
         self.__IsPattern = Status
 
