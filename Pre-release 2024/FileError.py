@@ -80,10 +80,10 @@ class Puzzle():
 #----------------------------------------------------------------------------------------------------------------------
                 if self.TestForError1() or self.TestForError2():
                     raise IndexError
-#----------------------------------------------------------------------------------------------------------------------
         except:
             print("Puzzle not loaded")
-#----------------------------------------------------------------------------------------------------------------------
+            Main()
+
     def TestForError1(self):
         for C in self.__Grid:
             if C.ContainsSymbolsNotAllowedList() and C.GetSymbol() != '@' and self.__Score == 0:
@@ -248,7 +248,7 @@ class Cell():
         return True
 #----------------------------------------------------------------------------------------------------------------------    
     def ContainsSymbolsNotAllowedList(self):
-        if self._Symbol == '@' or (len(self.__SymbolsNotAllowed) != 0):
+        if self._Symbol == '@' or len(self.__SymbolsNotAllowed) != 0:
             return True
 #----------------------------------------------------------------------------------------------------------------------
     def AddToNotAllowedSymbols(self, SymbolToAdd):
