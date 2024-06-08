@@ -1,3 +1,4 @@
+
 #Skeleton Program code for the AQA A Level Paper 1 Summer 2024 examination
 #this code should be used in conjunction with the Preliminary Material
 #written by the AQA Programmer Team
@@ -145,8 +146,7 @@ class Puzzle():
                     PatternString += self.__GetCell(StartRow - 1, StartColumn).GetSymbol()
                     PatternString += self.__GetCell(StartRow - 1, StartColumn + 1).GetSymbol()
                     for P in self.__AllowedPatterns:
-                        PatternSequence = P.GetPatternSequence()
-                        PatternSequence = ['*' if char != P.GetSymbol() else char for char in PatternSequence]
+                        PatternSequence = list(P.GetPatternSequence())
                         Count = 0
                         for i in range(9):
                             if PatternString[i] == PatternSequence[i]:
@@ -240,10 +240,6 @@ class Pattern():
 
     def GetPatternSequence(self):
       return self.__PatternSequence
-#----------------------------------------------------------------------------------------------------------------------
-    def GetSymbol(self):
-        return self.__Symbol
-#----------------------------------------------------------------------------------------------------------------------
 
 class Cell():
     def __init__(self):
