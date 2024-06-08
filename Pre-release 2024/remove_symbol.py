@@ -87,7 +87,6 @@ class Puzzle():
             print("Current score: " + str(self.__Score))
 #------------------------------------------------------------------------------
             print(f"Symbols Left : {self.__SymbolsLeft}")
-            Remove = False
             UserInput = input('Would you like to remove a cell? (y/N): ')
 #------------------------------------------------------------------------------
             Row = -1
@@ -108,7 +107,6 @@ class Puzzle():
                     pass
 #------------------------------------------------------------------------------
             if UserInput == 'y':
-                Remove = True
                 self.__RemoveCell(Row, Column, Remove)
                 continue
 #------------------------------------------------------------------------------
@@ -128,7 +126,6 @@ class Puzzle():
         return self.__Score
 #------------------------------------------------------------------------------    
     def __RemoveCell(self, Row, Column, Remove):
-        if Remove:
             C = self.__GetCell(Row, Column)
             Symbol = C.GetSymbol()
             if not C.IsEmpty() and C.CheckSymbolAllowed(Symbol):
