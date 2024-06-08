@@ -107,7 +107,7 @@ class Puzzle():
                     pass
 #------------------------------------------------------------------------------
             if UserInput == 'y':
-                self.__RemoveCell(Row, Column, Remove)
+                self.__RemoveCell(Row, Column)
                 continue
 #------------------------------------------------------------------------------
             Symbol = self.__GetSymbolFromUser()
@@ -125,7 +125,7 @@ class Puzzle():
         print()
         return self.__Score
 #------------------------------------------------------------------------------    
-    def __RemoveCell(self, Row, Column, Remove):
+    def __RemoveCell(self, Row, Column):
             C = self.__GetCell(Row, Column)
             Symbol = C.GetSymbol()
             if not C.IsEmpty() and C.CheckSymbolAllowed(Symbol):
