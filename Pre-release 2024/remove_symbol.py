@@ -131,7 +131,7 @@ class Puzzle():
         if Remove:
             C = self.__GetCell(Row, Column)
             Symbol = C.GetSymbol()
-            if C.IsEmpty() or C.CheckSymbolAllowed(Symbol):
+            if not C.IsEmpty() and C.CheckSymbolAllowed(Symbol):
                 C.ChangeSymbolInCell('-')
                 self.__SymbolsLeft += 1
             else:
