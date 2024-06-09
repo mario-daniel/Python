@@ -96,7 +96,7 @@ class Puzzle():
             if C.ContainsSymbolsNotAllowedList():
                 Count += 1
         ScoreShouldBeGiven = (Count / 5) * 10
-        if self.__Score < ScoreShouldBeGiven:
+        if self.__Score != ScoreShouldBeGiven:
             print('Error 2')
             return True
 #----------------------------------------------------------------------------------------------------------------------
