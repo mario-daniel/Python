@@ -95,8 +95,8 @@ class Puzzle():
         for C in self.__Grid:
             if C.ContainsSymbolsNotAllowedList():
                 Count += 1
-        ScoreShouldBeGiven = (Count / 5) * 10
-        if self.__Score != ScoreShouldBeGiven:
+        CountFromCurrentScore = (self.__Score / 10) * 9
+        if CountFromCurrentScore < self.__Score:
             print('Error 2')
             return True
 #----------------------------------------------------------------------------------------------------------------------
